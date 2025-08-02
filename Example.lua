@@ -824,7 +824,7 @@ Tabs.CreateThemeTab:Button({
     end
 })
 
-local InviteCode = "ApbHXtAwU2"
+local InviteCode = "cF8YeDPt2G"
 local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
 
 local Response = game:GetService("HttpService"):JSONDecode(WindUI.Creator.Request({
