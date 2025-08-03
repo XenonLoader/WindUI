@@ -20,8 +20,8 @@ local Element = {
 
 function Element:New(Config)
     local Dropdown = {
-        __type = "SearchDropdown",
-        Title = Config.Title or "Search Dropdown",
+        __type = "Dropdown",
+        Title = Config.Title or "Dropdown",
         Desc = Config.Desc or nil,
         Locked = Config.Locked or false,
         Values = Config.Values or {},
@@ -83,19 +83,16 @@ function Element:New(Config)
     })
     
     -- Search input frame
-    Dropdown.UIElements.SearchFrame = Creator.NewRoundFrame(Element.UICorner, "Squircle", {
-        ThemeTag = {
-            ImageColor3 = "Element",
-        },
-        ImageTransparency = 0.05,
+    Dropdown.UIElements.SearchFrame = New("Frame", {
+        BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 0, 36),
         Visible = false,
         Parent = Dropdown.DropdownFrame.UIElements.Container,
     }, {
         New("UIPadding", {
             PaddingTop = UDim.new(0, Element.SearchPadding),
-            PaddingLeft = UDim.new(0, Element.SearchPadding + 4),
-            PaddingRight = UDim.new(0, Element.SearchPadding + 4),
+            PaddingLeft = UDim.new(0, Element.SearchPadding),
+            PaddingRight = UDim.new(0, Element.SearchPadding),
             PaddingBottom = UDim.new(0, Element.SearchPadding),
         }),
         New("Frame", {
@@ -189,8 +186,8 @@ function Element:New(Config)
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 0, 1, 4), -- Position below dropdown with 4px gap
         Visible = false,
-        Active = false,
-        Parent = Dropdown.UIElements.SearchFrame, -- Parent to search frame so it moves with it
+        Active = true, -- Make sure it's active for clicks
+        Parent = Dropdown.DropdownFrame.UIElements.Container, -- Changed parent
         ClipsDescendants = false,
     }, {
         Dropdown.UIElements.Menu,
@@ -299,12 +296,19 @@ function Element:New(Config)
             }
             
             -- Create item frame
-            TabMain.UIElements.TabItem = Creator.NewRoundFrame(Element.UICorner - 2, "Squircle", {
+            TabMain.UIElements.TabItem = New("TextButton", {
                 Size = UDim2.new(1, 0, 0, 32),
-                ImageTransparency = 1,
+                BackgroundTransparency = 1,
                 Parent = Dropdown.UIElements.Menu.Frame.DropdownScroll,
-                ImageColor3 = Color3.new(1, 1, 1),
+                Text = "",
+                AutoButtonColor = false,
             }, {
+                Creator.NewRoundFrame(Element.UICorner - 2, "Squircle", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    ImageTransparency = 1,
+                    ImageColor3 = Color3.new(1, 1, 1),
+                    Name = "Background"
+                }),
                 -- Hover highlight
                 Creator.NewRoundFrame(Element.UICorner - 2, "SquircleOutline", {
                     Size = UDim2.new(1, 0, 1, 0),
@@ -367,7 +371,7 @@ function Element:New(Config)
                         TextTruncate = "AtEnd",
                     })
                 })
-            }, true)
+            })
             
             -- Check if selected
             if Dropdown.Multi then
@@ -378,7 +382,7 @@ function Element:New(Config)
             
             -- Apply selected state
             if TabMain.Selected then
-                TabMain.UIElements.TabItem.ImageTransparency = 0.92
+                TabMain.UIElements.TabItem.Background.ImageTransparency = 0.92
                 TabMain.UIElements.TabItem.Highlight.ImageTransparency = 0.85
                 TabMain.UIElements.TabItem.Frame.TextLabel.TextTransparency = 0
                 TabMain.UIElements.TabItem.Frame.SelectionBar.BackgroundTransparency = 0
@@ -391,7 +395,7 @@ function Element:New(Config)
                 if Dropdown.Multi then
                     if not TabMain.Selected then
                         TabMain.Selected = true
-                        Tween(TabMain.UIElements.TabItem, 0.15, {ImageTransparency = 0.92}):Play()
+                        Tween(TabMain.UIElements.TabItem.Background, 0.15, {ImageTransparency = 0.92}):Play()
                         Tween(TabMain.UIElements.TabItem.Highlight, 0.15, {ImageTransparency = 0.85}):Play()
                         Tween(TabMain.UIElements.TabItem.Frame.TextLabel, 0.15, {TextTransparency = 0}):Play()
                         Tween(TabMain.UIElements.TabItem.Frame.SelectionBar, 0.15, {BackgroundTransparency = 0}):Play()
@@ -401,7 +405,7 @@ function Element:New(Config)
                             return
                         end
                         TabMain.Selected = false
-                        Tween(TabMain.UIElements.TabItem, 0.15, {ImageTransparency = 1}):Play()
+                        Tween(TabMain.UIElements.TabItem.Background, 0.15, {ImageTransparency = 1}):Play()
                         Tween(TabMain.UIElements.TabItem.Highlight, 0.15, {ImageTransparency = 1}):Play()
                         Tween(TabMain.UIElements.TabItem.Frame.TextLabel, 0.15, {TextTransparency = 0.2}):Play()
                         Tween(TabMain.UIElements.TabItem.Frame.SelectionBar, 0.15, {BackgroundTransparency = 1}):Play()
@@ -415,14 +419,14 @@ function Element:New(Config)
                 else
                     -- Single selection
                     for Index, TabOther in next, Dropdown.Tabs do
-                        Tween(TabOther.UIElements.TabItem, 0.15, {ImageTransparency = 1}):Play()
+                        Tween(TabOther.UIElements.TabItem.Background, 0.15, {ImageTransparency = 1}):Play()
                         Tween(TabOther.UIElements.TabItem.Highlight, 0.15, {ImageTransparency = 1}):Play()
                         Tween(TabOther.UIElements.TabItem.Frame.TextLabel, 0.15, {TextTransparency = 0.2}):Play()
                         Tween(TabOther.UIElements.TabItem.Frame.SelectionBar, 0.15, {BackgroundTransparency = 1}):Play()
                         TabOther.Selected = false
                     end
                     TabMain.Selected = true
-                    Tween(TabMain.UIElements.TabItem, 0.15, {ImageTransparency = 0.92}):Play()
+                    Tween(TabMain.UIElements.TabItem.Background, 0.15, {ImageTransparency = 0.92}):Play()
                     Tween(TabMain.UIElements.TabItem.Highlight, 0.15, {ImageTransparency = 0.85}):Play()
                     Tween(TabMain.UIElements.TabItem.Frame.TextLabel, 0.15, {TextTransparency = 0}):Play()
                     Tween(TabMain.UIElements.TabItem.Frame.SelectionBar, 0.15, {BackgroundTransparency = 0}):Play()

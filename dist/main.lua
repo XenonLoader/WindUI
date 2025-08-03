@@ -3421,8 +3421,8 @@ SearchPadding=6,
 
 function l.New(m,n)
 local o={
-__type="SearchDropdown",
-Title=n.Title or"Search Dropdown",
+__type="Dropdown",
+Title=n.Title or"Dropdown",
 Desc=n.Desc or nil,
 Locked=n.Locked or false,
 Values=n.Values or{},
@@ -3484,19 +3484,16 @@ Parent=o.UIElements.Display.Frame
 })
 
 
-o.UIElements.SearchFrame=h.NewRoundFrame(l.UICorner,"Squircle",{
-ThemeTag={
-ImageColor3="Element",
-},
-ImageTransparency=0.05,
+o.UIElements.SearchFrame=i("Frame",{
+BackgroundTransparency=1,
 Size=UDim2.new(1,0,0,36),
 Visible=false,
 Parent=o.DropdownFrame.UIElements.Container,
 },{
 i("UIPadding",{
 PaddingTop=UDim.new(0,l.SearchPadding),
-PaddingLeft=UDim.new(0,l.SearchPadding+4),
-PaddingRight=UDim.new(0,l.SearchPadding+4),
+PaddingLeft=UDim.new(0,l.SearchPadding),
+PaddingRight=UDim.new(0,l.SearchPadding),
 PaddingBottom=UDim.new(0,l.SearchPadding),
 }),
 i("Frame",{
@@ -3590,8 +3587,8 @@ Size=UDim2.new(0,o.MenuWidth,0,0),
 BackgroundTransparency=1,
 Position=UDim2.new(0,0,1,4),
 Visible=false,
-Active=false,
-Parent=o.UIElements.SearchFrame,
+Active=true,
+Parent=o.DropdownFrame.UIElements.Container,
 ClipsDescendants=false,
 },{
 o.UIElements.Menu,
@@ -3700,12 +3697,19 @@ UIElements={},
 }
 
 
-u.UIElements.TabItem=h.NewRoundFrame(l.UICorner-2,"Squircle",{
+u.UIElements.TabItem=i("TextButton",{
 Size=UDim2.new(1,0,0,32),
-ImageTransparency=1,
+BackgroundTransparency=1,
 Parent=o.UIElements.Menu.Frame.DropdownScroll,
-ImageColor3=Color3.new(1,1,1),
+Text="",
+AutoButtonColor=false,
 },{
+h.NewRoundFrame(l.UICorner-2,"Squircle",{
+Size=UDim2.new(1,0,1,0),
+ImageTransparency=1,
+ImageColor3=Color3.new(1,1,1),
+Name="Background"
+}),
 
 h.NewRoundFrame(l.UICorner-2,"SquircleOutline",{
 Size=UDim2.new(1,0,1,0),
@@ -3768,7 +3772,7 @@ Position=UDim2.new(0,8,0,0),
 TextTruncate="AtEnd",
 })
 })
-},true)
+})
 
 
 if o.Multi then
@@ -3779,7 +3783,7 @@ end
 
 
 if u.Selected then
-u.UIElements.TabItem.ImageTransparency=0.92
+u.UIElements.TabItem.Background.ImageTransparency=0.92
 u.UIElements.TabItem.Highlight.ImageTransparency=0.85
 u.UIElements.TabItem.Frame.TextLabel.TextTransparency=0
 u.UIElements.TabItem.Frame.SelectionBar.BackgroundTransparency=0
@@ -3792,7 +3796,7 @@ local function HandleClick()
 if o.Multi then
 if not u.Selected then
 u.Selected=true
-j(u.UIElements.TabItem,0.15,{ImageTransparency=0.92}):Play()
+j(u.UIElements.TabItem.Background,0.15,{ImageTransparency=0.92}):Play()
 j(u.UIElements.TabItem.Highlight,0.15,{ImageTransparency=0.85}):Play()
 j(u.UIElements.TabItem.Frame.TextLabel,0.15,{TextTransparency=0}):Play()
 j(u.UIElements.TabItem.Frame.SelectionBar,0.15,{BackgroundTransparency=0}):Play()
@@ -3802,7 +3806,7 @@ if not o.AllowNone and#o.Value==1 then
 return
 end
 u.Selected=false
-j(u.UIElements.TabItem,0.15,{ImageTransparency=1}):Play()
+j(u.UIElements.TabItem.Background,0.15,{ImageTransparency=1}):Play()
 j(u.UIElements.TabItem.Highlight,0.15,{ImageTransparency=1}):Play()
 j(u.UIElements.TabItem.Frame.TextLabel,0.15,{TextTransparency=0.2}):Play()
 j(u.UIElements.TabItem.Frame.SelectionBar,0.15,{BackgroundTransparency=1}):Play()
@@ -3816,14 +3820,14 @@ end
 else
 
 for v,w in next,o.Tabs do
-j(w.UIElements.TabItem,0.15,{ImageTransparency=1}):Play()
+j(w.UIElements.TabItem.Background,0.15,{ImageTransparency=1}):Play()
 j(w.UIElements.TabItem.Highlight,0.15,{ImageTransparency=1}):Play()
 j(w.UIElements.TabItem.Frame.TextLabel,0.15,{TextTransparency=0.2}):Play()
 j(w.UIElements.TabItem.Frame.SelectionBar,0.15,{BackgroundTransparency=1}):Play()
 w.Selected=false
 end
 u.Selected=true
-j(u.UIElements.TabItem,0.15,{ImageTransparency=0.92}):Play()
+j(u.UIElements.TabItem.Background,0.15,{ImageTransparency=0.92}):Play()
 j(u.UIElements.TabItem.Highlight,0.15,{ImageTransparency=0.85}):Play()
 j(u.UIElements.TabItem.Frame.TextLabel,0.15,{TextTransparency=0}):Play()
 j(u.UIElements.TabItem.Frame.SelectionBar,0.15,{BackgroundTransparency=0}):Play()
