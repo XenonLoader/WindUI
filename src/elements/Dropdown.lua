@@ -57,8 +57,8 @@ function Element:New(Config)
     
     Dropdown.UIElements.Dropdown = CreateLabel("", nil, Dropdown.DropdownFrame.UIElements.Container)
     
-    Dropdown.UIElements.Dropdown.Frame.Frame.TextLabel.TextTruncate = "AtEnd"
-    Dropdown.UIElements.Dropdown.Frame.Frame.TextLabel.Size = UDim2.new(1, Dropdown.UIElements.Dropdown.Frame.Frame.TextLabel.Size.X.Offset - 18 - 12 - 12,0,0)
+    Dropdown.UIElements.Dropdown.Frame.TextLabel.TextTruncate = "AtEnd"
+    Dropdown.UIElements.Dropdown.Frame.TextLabel.Size = UDim2.new(1, Dropdown.UIElements.Dropdown.Frame.TextLabel.Size.X.Offset - 18 - 12 - 12,0,0)
     
     Dropdown.UIElements.Dropdown.Size = UDim2.new(1,0,0,40)
     
@@ -341,6 +341,7 @@ function Element:New(Config)
                     BackgroundTransparency = 1,
                     Text = "",
                     AutoButtonColor = false,
+                    Name = "Button",
                 }, {
                     New("UIPadding", {
                         PaddingLeft = UDim.new(0,Element.TabPadding),
@@ -365,6 +366,7 @@ function Element:New(Config)
                         Size = UDim2.new(1,0,0,0),
                         AnchorPoint = Vector2.new(0,0.5),
                         Position = UDim2.new(0,0,0.5,0),
+                        Name = "Label",
                     })
                 })
             }, true)
@@ -377,8 +379,8 @@ function Element:New(Config)
             
             if TabMain.Selected then
                 TabMain.UIElements.TabItem.Selection.ImageTransparency = 0.85
-                TabMain.UIElements.TabItem.TextButton.TextLabel.TextTransparency = 0
-                TabMain.UIElements.TabItem.TextButton.TextLabel.FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold)
+                TabMain.UIElements.TabItem.Button.Label.TextTransparency = 0
+                TabMain.UIElements.TabItem.Button.Label.FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold)
             end
             
             Dropdown.Tabs[Index] = TabMain
@@ -393,29 +395,29 @@ function Element:New(Config)
             end
             
             -- Enhanced hover effects
-            Creator.AddSignal(TabMain.UIElements.TabItem.TextButton.MouseEnter, function()
+            Creator.AddSignal(TabMain.UIElements.TabItem.Button.MouseEnter, function()
                 if not TabMain.Selected then
                     Tween(TabMain.UIElements.TabItem.Highlight, 0.15, {ImageTransparency = 0.9}):Play()
-                    Tween(TabMain.UIElements.TabItem.TextButton.TextLabel, 0.15, {TextTransparency = 0.1}):Play()
+                    Tween(TabMain.UIElements.TabItem.Button.Label, 0.15, {TextTransparency = 0.1}):Play()
                 end
             end)
             
-            Creator.AddSignal(TabMain.UIElements.TabItem.TextButton.MouseLeave, function()
+            Creator.AddSignal(TabMain.UIElements.TabItem.Button.MouseLeave, function()
                 if not TabMain.Selected then
                     Tween(TabMain.UIElements.TabItem.Highlight, 0.15, {ImageTransparency = 1}):Play()
-                    Tween(TabMain.UIElements.TabItem.TextButton.TextLabel, 0.15, {TextTransparency = 0.2}):Play()
+                    Tween(TabMain.UIElements.TabItem.Button.Label, 0.15, {TextTransparency = 0.2}):Play()
                 end
             end)
             
-            Creator.AddSignal(TabMain.UIElements.TabItem.TextButton.MouseButton1Click, function()
+            Creator.AddSignal(TabMain.UIElements.TabItem.Button.MouseButton1Click, function()
                 if Dropdown.Multi then
                     if not TabMain.Selected then
                         TabMain.Selected = true
                         Tween(TabMain.UIElements.TabItem.Selection, 0.2, {ImageTransparency = 0.85}):Play()
-                        Tween(TabMain.UIElements.TabItem.TextButton.TextLabel, 0.2, {
+                        Tween(TabMain.UIElements.TabItem.Button.Label, 0.2, {
                             TextTransparency = 0,
                         }):Play()
-                        TabMain.UIElements.TabItem.TextButton.TextLabel.FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold)
+                        TabMain.UIElements.TabItem.Button.Label.FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold)
                         table.insert(Dropdown.Value, TabMain.Name)
                     else
                         if not Dropdown.AllowNone and #Dropdown.Value == 1 then
@@ -423,10 +425,10 @@ function Element:New(Config)
                         end
                         TabMain.Selected = false
                         Tween(TabMain.UIElements.TabItem.Selection, 0.2, {ImageTransparency = 1}):Play()
-                        Tween(TabMain.UIElements.TabItem.TextButton.TextLabel, 0.2, {
+                        Tween(TabMain.UIElements.TabItem.Button.Label, 0.2, {
                             TextTransparency = 0.2,
                         }):Play()
-                        TabMain.UIElements.TabItem.TextButton.TextLabel.FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium)
+                        TabMain.UIElements.TabItem.Button.Label.FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium)
                         for i, v in ipairs(Dropdown.Value) do
                             if v == TabMain.Name then
                                 table.remove(Dropdown.Value, i)
@@ -437,18 +439,18 @@ function Element:New(Config)
                 else
                     for Index, TabPisun in next, Dropdown.Tabs do
                         Tween(TabPisun.UIElements.TabItem.Selection, 0.2, {ImageTransparency = 1}):Play()
-                        Tween(TabPisun.UIElements.TabItem.TextButton.TextLabel, 0.2, {
+                        Tween(TabPisun.UIElements.TabItem.Button.Label, 0.2, {
                             TextTransparency = 0.2,
                         }):Play()
-                        TabPisun.UIElements.TabItem.TextButton.TextLabel.FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium)
+                        TabPisun.UIElements.TabItem.Button.Label.FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium)
                         TabPisun.Selected = false
                     end
                     TabMain.Selected = true
                     Tween(TabMain.UIElements.TabItem.Selection, 0.2, {ImageTransparency = 0.85}):Play()
-                    Tween(TabMain.UIElements.TabItem.TextButton.TextLabel, 0.2, {
+                    Tween(TabMain.UIElements.TabItem.Button.Label, 0.2, {
                         TextTransparency = 0,
                     }):Play()
-                    TabMain.UIElements.TabItem.TextButton.TextLabel.FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold)
+                    TabMain.UIElements.TabItem.Button.Label.FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold)
                     Dropdown.Value = TabMain.Name
                     
                     -- Auto close for single selection
@@ -465,8 +467,8 @@ function Element:New(Config)
         -- Auto-resize based on content
         local maxWidth = Dropdown.MenuWidth
         for _, tabmain in next, Dropdown.Tabs do
-            if tabmain.UIElements.TabItem.TextButton.TextLabel then
-                local width = tabmain.UIElements.TabItem.TextButton.TextLabel.TextBounds.X + (Element.TabPadding * 2) + 20
+            if tabmain.UIElements.TabItem.Button.Label then
+                local width = tabmain.UIElements.TabItem.Button.Label.TextBounds.X + (Element.TabPadding * 2) + 20
                 maxWidth = math.max(maxWidth, width)
             end
         end

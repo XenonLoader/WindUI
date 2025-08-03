@@ -3458,8 +3458,8 @@ Hover=false,
 
 o.UIElements.Dropdown=k("",nil,o.DropdownFrame.UIElements.Container)
 
-o.UIElements.Dropdown.Frame.Frame.TextLabel.TextTruncate="AtEnd"
-o.UIElements.Dropdown.Frame.Frame.TextLabel.Size=UDim2.new(1,o.UIElements.Dropdown.Frame.Frame.TextLabel.Size.X.Offset-18-12-12,0,0)
+o.UIElements.Dropdown.Frame.TextLabel.TextTruncate="AtEnd"
+o.UIElements.Dropdown.Frame.TextLabel.Size=UDim2.new(1,o.UIElements.Dropdown.Frame.TextLabel.Size.X.Offset-18-12-12,0,0)
 
 o.UIElements.Dropdown.Size=UDim2.new(1,0,0,40)
 
@@ -3742,6 +3742,7 @@ Size=UDim2.new(1,0,1,0),
 BackgroundTransparency=1,
 Text="",
 AutoButtonColor=false,
+Name="Button",
 },{
 i("UIPadding",{
 PaddingLeft=UDim.new(0,l.TabPadding),
@@ -3766,6 +3767,7 @@ AutomaticSize="Y",
 Size=UDim2.new(1,0,0,0),
 AnchorPoint=Vector2.new(0,0.5),
 Position=UDim2.new(0,0,0.5,0),
+Name="Label",
 })
 })
 },true)
@@ -3778,8 +3780,8 @@ end
 
 if w.Selected then
 w.UIElements.TabItem.Selection.ImageTransparency=0.85
-w.UIElements.TabItem.TextButton.TextLabel.TextTransparency=0
-w.UIElements.TabItem.TextButton.TextLabel.FontFace=Font.new(h.Font,Enum.FontWeight.SemiBold)
+w.UIElements.TabItem.Button.Label.TextTransparency=0
+w.UIElements.TabItem.Button.Label.FontFace=Font.new(h.Font,Enum.FontWeight.SemiBold)
 end
 
 o.Tabs[u]=w
@@ -3794,29 +3796,29 @@ end)
 end
 
 
-h.AddSignal(w.UIElements.TabItem.TextButton.MouseEnter,function()
+h.AddSignal(w.UIElements.TabItem.Button.MouseEnter,function()
 if not w.Selected then
 j(w.UIElements.TabItem.Highlight,0.15,{ImageTransparency=0.9}):Play()
-j(w.UIElements.TabItem.TextButton.TextLabel,0.15,{TextTransparency=0.1}):Play()
+j(w.UIElements.TabItem.Button.Label,0.15,{TextTransparency=0.1}):Play()
 end
 end)
 
-h.AddSignal(w.UIElements.TabItem.TextButton.MouseLeave,function()
+h.AddSignal(w.UIElements.TabItem.Button.MouseLeave,function()
 if not w.Selected then
 j(w.UIElements.TabItem.Highlight,0.15,{ImageTransparency=1}):Play()
-j(w.UIElements.TabItem.TextButton.TextLabel,0.15,{TextTransparency=0.2}):Play()
+j(w.UIElements.TabItem.Button.Label,0.15,{TextTransparency=0.2}):Play()
 end
 end)
 
-h.AddSignal(w.UIElements.TabItem.TextButton.MouseButton1Click,function()
+h.AddSignal(w.UIElements.TabItem.Button.MouseButton1Click,function()
 if o.Multi then
 if not w.Selected then
 w.Selected=true
 j(w.UIElements.TabItem.Selection,0.2,{ImageTransparency=0.85}):Play()
-j(w.UIElements.TabItem.TextButton.TextLabel,0.2,{
+j(w.UIElements.TabItem.Button.Label,0.2,{
 TextTransparency=0,
 }):Play()
-w.UIElements.TabItem.TextButton.TextLabel.FontFace=Font.new(h.Font,Enum.FontWeight.SemiBold)
+w.UIElements.TabItem.Button.Label.FontFace=Font.new(h.Font,Enum.FontWeight.SemiBold)
 table.insert(o.Value,w.Name)
 else
 if not o.AllowNone and#o.Value==1 then
@@ -3824,10 +3826,10 @@ return
 end
 w.Selected=false
 j(w.UIElements.TabItem.Selection,0.2,{ImageTransparency=1}):Play()
-j(w.UIElements.TabItem.TextButton.TextLabel,0.2,{
+j(w.UIElements.TabItem.Button.Label,0.2,{
 TextTransparency=0.2,
 }):Play()
-w.UIElements.TabItem.TextButton.TextLabel.FontFace=Font.new(h.Font,Enum.FontWeight.Medium)
+w.UIElements.TabItem.Button.Label.FontFace=Font.new(h.Font,Enum.FontWeight.Medium)
 for x,y in ipairs(o.Value)do
 if y==w.Name then
 table.remove(o.Value,x)
@@ -3838,18 +3840,18 @@ end
 else
 for x,y in next,o.Tabs do
 j(y.UIElements.TabItem.Selection,0.2,{ImageTransparency=1}):Play()
-j(y.UIElements.TabItem.TextButton.TextLabel,0.2,{
+j(y.UIElements.TabItem.Button.Label,0.2,{
 TextTransparency=0.2,
 }):Play()
-y.UIElements.TabItem.TextButton.TextLabel.FontFace=Font.new(h.Font,Enum.FontWeight.Medium)
+y.UIElements.TabItem.Button.Label.FontFace=Font.new(h.Font,Enum.FontWeight.Medium)
 y.Selected=false
 end
 w.Selected=true
 j(w.UIElements.TabItem.Selection,0.2,{ImageTransparency=0.85}):Play()
-j(w.UIElements.TabItem.TextButton.TextLabel,0.2,{
+j(w.UIElements.TabItem.Button.Label,0.2,{
 TextTransparency=0,
 }):Play()
-w.UIElements.TabItem.TextButton.TextLabel.FontFace=Font.new(h.Font,Enum.FontWeight.SemiBold)
+w.UIElements.TabItem.Button.Label.FontFace=Font.new(h.Font,Enum.FontWeight.SemiBold)
 o.Value=w.Name
 
 
@@ -3866,8 +3868,8 @@ end
 
 local u=o.MenuWidth
 for v,w in next,o.Tabs do
-if w.UIElements.TabItem.TextButton.TextLabel then
-local x=w.UIElements.TabItem.TextButton.TextLabel.TextBounds.X+(l.TabPadding*2)+20
+if w.UIElements.TabItem.Button.Label then
+local x=w.UIElements.TabItem.Button.Label.TextBounds.X+(l.TabPadding*2)+20
 u=math.max(u,x)
 end
 end
