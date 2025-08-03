@@ -3695,13 +3695,18 @@ end
 function o.Refresh(r,s)
 local t=o.UIElements.Menu.Frame.Frame.ScrollingFrame
 
-for u,v in next,t:GetChildren()do
+
+for u,v in pairs(t:GetChildren())do
 if not v:IsA"UIListLayout"and not v:IsA"UIPadding"then
 v:Destroy()
 end
 end
 
+
 o.Tabs={}
+
+
+task.wait()
 
 for u,v in next,s do
 local w={

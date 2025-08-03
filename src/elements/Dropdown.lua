@@ -294,13 +294,18 @@ function Element:New(Config)
     function Dropdown:Refresh(Values)
         local scrollFrame = Dropdown.UIElements.Menu.Frame.Frame.ScrollingFrame
         
-        for _, Elementt in next, scrollFrame:GetChildren() do
-            if not Elementt:IsA("UIListLayout") and not Elementt:IsA("UIPadding") then
-                Elementt:Destroy()
+        -- Clear all existing tab items properly
+        for _, child in pairs(scrollFrame:GetChildren()) do
+            if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                child:Destroy()
             end
         end
         
+        -- Clear the tabs table completely
         Dropdown.Tabs = {}
+        
+        -- Wait a frame to ensure cleanup is complete
+        task.wait()
         
         for Index,Tab in next, Values do
             local TabMain = {
