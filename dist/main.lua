@@ -1891,7 +1891,7 @@ value=e.Value,
 end,
 Load=function(e,f)
 if e then
-e:Select(f.value)
+e:Set(f.value)
 end
 end
 },
@@ -1925,7 +1925,7 @@ Slider={
 Save=function(e)
 return{
 __type=e.__type,
-value=e.Value.Default,
+value=e.Value or e.Default,
 }
 end,
 Load=function(e,f)
@@ -1953,7 +1953,6 @@ end
 function d.Init(e,f)
 if not f.Folder then
 warn"[ WindUI.ConfigManager ] Window.Folder is not specified."
-
 return false
 end
 
@@ -1961,13 +1960,19 @@ d.Window=f
 d.Folder=f.Folder
 d.Path="WindUI/"..tostring(d.Folder).."/config/"
 
+
+pcall(function()
+makefolder"WindUI"
+makefolder("WindUI/"..tostring(d.Folder))
+makefolder(d.Path)
+end)
+
 return d
 end
 
 function d.CreateConfig(e,f)
 local g={
 Path=d.Path..f..".json",
-
 Elements={}
 }
 
@@ -1981,7 +1986,11 @@ end
 
 function g.Save(h)
 local i={
-Elements={}
+Elements={},
+WindowSettings={
+Theme=d.Window and d.Window:GetCurrentTheme()or"Dark",
+Transparency=d.Window and d.Window:GetTransparency()or false
+}
 }
 
 for j,k in next,g.Elements do
@@ -1990,26 +1999,57 @@ i.Elements[tostring(j)]=d.Parser[k.__type].Save(k)
 end
 end
 
-print(b:JSONEncode(i))
-
+local j,k=pcall(function()
 writefile(g.Path,b:JSONEncode(i))
+end)
+
+return j,k
 end
 
 function g.Load(h)
-if not isfile(g.Path)then return false,"Invalid file"end
+if not isfile(g.Path)then
+return false,"Config file not found"
+end
 
-local i=b:JSONDecode(readfile(g.Path))
+local i,j=pcall(function()
+return b:JSONDecode(readfile(g.Path))
+end)
 
-for j,k in next,i.Elements do
-if g.Elements[j]and d.Parser[k.__type]then
+if not i then
+return false,"Failed to decode config file"
+end
+
+
+for k,l in next,j.Elements do
+if g.Elements[k]and d.Parser[l.__type]then
 task.spawn(function()
-d.Parser[k.__type].Load(g.Elements[j],k)
+d.Parser[l.__type].Load(g.Elements[k],l)
 end)
 end
 end
 
+
+if j.WindowSettings and d.Window then
+if j.WindowSettings.Theme then
+d.Window:SetTheme(j.WindowSettings.Theme)
+end
+if j.WindowSettings.Transparency~=nil then
+d.Window:ToggleTransparency(j.WindowSettings.Transparency)
+end
 end
 
+return true
+end
+
+function g.Delete(h)
+if isfile(g.Path)then
+local i=pcall(function()
+delfile(g.Path)
+end)
+return i
+end
+return false,"Config file not found"
+end
 
 d.Configs[f]=g
 
@@ -2019,16 +2059,47 @@ end
 function d.AllConfigs(e)
 if listfiles then
 local f={}
-for g,h in next,listfiles(d.Path)do
-local i=h:match"([^\\/]+)%.json$"
-if i then
-table.insert(f,i)
+local g,h=pcall(function()
+return listfiles(d.Path)
+end)
+
+if g and h then
+for i,j in next,h do
+local k=j:match"([^\\/]+)%.json$"
+if k then
+table.insert(f,k)
+end
 end
 end
 
 return f
 end
-return false
+return{}
+end
+
+function d.DeleteConfig(e,f)
+if not f then return false,"No config name provided"end
+
+local g=d.Path..f..".json"
+if isfile(g)then
+local h=pcall(function()
+delfile(g)
+end)
+
+
+if h and d.Configs[f]then
+d.Configs[f]=nil
+end
+
+return h
+end
+return false,"Config file not found"
+end
+
+function d.ConfigExists(e,f)
+if not f then return false end
+local g=d.Path..f..".json"
+return isfile(g)
 end
 
 return d end function a.l()
