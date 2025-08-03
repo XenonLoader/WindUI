@@ -103,12 +103,10 @@ function Element:New(Config)
             PaddingRight = UDim.new(0, Element.MenuPadding),
             PaddingBottom = UDim.new(0, Element.MenuPadding),
         }),
-        -- Search Input (if enabled)
+        -- Search Input (if enabled) - FIXED COLORS
         Dropdown.SearchEnabled and New("Frame", {
             Size = UDim2.new(1, 0, 0, 32),
-            ThemeTag = {
-                BackgroundColor3 = "ElementBackground"
-            },
+            BackgroundColor3 = Color3.fromRGB(45, 45, 50), -- Abu-abu gelap
             BorderSizePixel = 0,
             Name = "SearchContainer"
         }, {
@@ -130,10 +128,8 @@ function Element:New(Config)
                 TextSize = 14,
                 TextXAlignment = "Left",
                 FontFace = Font.new(Creator.Font, Enum.FontWeight.Regular),
-                ThemeTag = {
-                    TextColor3 = "Text",
-                    PlaceholderColor3 = "SubText"
-                },
+                TextColor3 = Color3.fromRGB(220, 220, 220), -- Text putih terang
+                PlaceholderColor3 = Color3.fromRGB(140, 140, 140), -- Placeholder abu-abu
                 Name = "SearchInput",
                 ClearTextOnFocus = false
             }),
@@ -145,9 +141,7 @@ function Element:New(Config)
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 BackgroundTransparency = 1,
-                ThemeTag = {
-                    ImageColor3 = "SubText"
-                }
+                ImageColor3 = Color3.fromRGB(140, 140, 140) -- Icon abu-abu
             })
         }) or nil,
 		New("Frame", {
