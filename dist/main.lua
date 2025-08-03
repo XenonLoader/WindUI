@@ -3400,8 +3400,9 @@ end
 
 return g end function a.v()
 local b=game:GetService"UserInputService"
-local e=game:GetService"Players".LocalPlayer:GetMouse()
-local g=game:GetService"Workspace".CurrentCamera
+local e=game:GetService"Players".LocalPlayer:GetMouse()local g=
+game:GetService"Workspace".CurrentCamera
+game:GetService"TextService"
 
 local h=a.load'a'
 local i=h.New
@@ -3426,6 +3427,8 @@ Locked=n.Locked or false,
 Values=n.Values or{},
 MenuWidth=n.MenuWidth or 170,
 Value=n.Value,
+SearchEnabled=n.SearchEnabled~=false,
+SearchPlaceholder=n.SearchPlaceholder or"Search...",
 AllowNone=n.AllowNone,
 Multi=n.Multi,
 Callback=n.Callback or function()end,
@@ -3433,12 +3436,17 @@ Callback=n.Callback or function()end,
 UIElements={},
 
 Opened=false,
-Tabs={}
+Tabs={},
+FilteredValues={},
+SearchQuery=""
 }
 
 if o.Multi and not o.Value then
 o.Value={}
 end
+
+
+o.FilteredValues=o.Values
 
 local p=true
 
@@ -3496,9 +3504,55 @@ PaddingLeft=UDim.new(0,l.MenuPadding),
 PaddingRight=UDim.new(0,l.MenuPadding),
 PaddingBottom=UDim.new(0,l.MenuPadding),
 }),
+
+o.SearchEnabled and i("Frame",{
+Size=UDim2.new(1,0,0,32),
+BackgroundColor3=Color3.fromRGB(245,245,245),
+BorderSizePixel=0,
+Name="SearchContainer"
+},{
+i("UICorner",{
+CornerRadius=UDim.new(0,6)
+}),
+i("UIPadding",{
+PaddingLeft=UDim.new(0,8),
+PaddingRight=UDim.new(0,8),
+PaddingTop=UDim.new(0,4),
+PaddingBottom=UDim.new(0,4),
+}),
+i("TextBox",{
+Size=UDim2.new(1,-20,1,0),
+Position=UDim2.new(0,20,0,0),
+BackgroundTransparency=1,
+Text="",
+PlaceholderText=o.SearchPlaceholder,
+TextSize=14,
+TextXAlignment="Left",
+FontFace=Font.new(h.Font,Enum.FontWeight.Regular),
+ThemeTag={
+TextColor3="Text",
+PlaceholderColor3="SubText"
+},
+Name="SearchInput",
+ClearTextOnFocus=false
+}),
+i("ImageLabel",{
+Image=h.Icon"search"[1],
+ImageRectOffset=h.Icon"search"[2].ImageRectPosition,
+ImageRectSize=h.Icon"search"[2].ImageRectSize,
+Size=UDim2.new(0,16,0,16),
+Position=UDim2.new(0,0,0.5,0),
+AnchorPoint=Vector2.new(0,0.5),
+BackgroundTransparency=1,
+ThemeTag={
+ImageColor3="SubText"
+}
+})
+})or nil,
 i("Frame",{
 BackgroundTransparency=1,
-Size=UDim2.new(1,0,1,0),
+Size=o.SearchEnabled and UDim2.new(1,0,1,-37)or UDim2.new(1,0,1,0),
+Position=o.SearchEnabled and UDim2.new(0,0,0,37)or UDim2.new(0,0,0,0),
 
 ClipsDescendants=true
 },{
@@ -3520,14 +3574,14 @@ o.UIElements.UIListLayout,
 })
 
 o.UIElements.MenuCanvas=i("Frame",{
-Size=UDim2.new(0,o.MenuWidth,0,300),
+Size=UDim2.new(0,o.MenuWidth,0,o.SearchEnabled and 337 or 300),
 BackgroundTransparency=1,
-Position=UDim2.new(-10,0,-10,0),
+Position=UDim2.new(0,0,1,5),
 Visible=false,
 Active=false,
 
 Parent=n.WindUI.DropdownGui,
-AnchorPoint=Vector2.new(1,0),
+AnchorPoint=Vector2.new(0,0),
 },{
 o.UIElements.Menu,
 
@@ -3540,6 +3594,11 @@ i("UISizeConstraint",{
 MinSize=Vector2.new(170,0)
 })
 })
+
+
+if o.SearchEnabled then
+o.UIElements.SearchInput=o.UIElements.Menu.SearchContainer.SearchInput
+end
 
 function o.Lock(q)
 p=false
@@ -3560,36 +3619,46 @@ end
 
 local function RecalculateListSize()
 if#o.Values>10 then
-o.UIElements.MenuCanvas.Size=UDim2.fromOffset(o.UIElements.MenuCanvas.AbsoluteSize.X,392)
+o.UIElements.MenuCanvas.Size=UDim2.fromOffset(o.UIElements.MenuCanvas.AbsoluteSize.X,o.SearchEnabled and 429 or 392)
 else
-o.UIElements.MenuCanvas.Size=UDim2.fromOffset(o.UIElements.MenuCanvas.AbsoluteSize.X,o.UIElements.UIListLayout.AbsoluteContentSize.Y+(l.MenuPadding*2))
+local q=o.UIElements.UIListLayout.AbsoluteContentSize.Y+(l.MenuPadding*2)
+local r=o.SearchEnabled and 37 or 0
+o.UIElements.MenuCanvas.Size=UDim2.fromOffset(o.UIElements.MenuCanvas.AbsoluteSize.X,q+r)
 end
 end
+
 
 function UpdatePosition()
 local q=o.UIElements.Dropdown
 local r=o.UIElements.MenuCanvas
 
-local s=g.ViewportSize.Y-(q.AbsolutePosition.Y+q.AbsoluteSize.Y)-l.MenuPadding-54
-local t=r.AbsoluteSize.Y+l.MenuPadding
-
-local u=-54
-if s<t then
-u=t-s-54
-end
 
 r.Position=UDim2.new(
 0,
-q.AbsolutePosition.X+q.AbsoluteSize.X,
+q.AbsolutePosition.X,
 0,
-q.AbsolutePosition.Y+q.AbsoluteSize.Y-u+l.MenuPadding
+q.AbsolutePosition.Y+q.AbsoluteSize.Y+5
 )
 end
 
 
+function o.FilterValues(q,r)
+if not r or r==""then
+o.FilteredValues=o.Values
+else
+o.FilteredValues={}
+local s=string.lower(r)
+for t,u in ipairs(o.Values)do
+if string.find(string.lower(u),s,1,true)then
+table.insert(o.FilteredValues,u)
+end
+end
+end
+o:Refresh(o.FilteredValues)
+end
 
 function o.Display(q)
-local r=o.Values
+local r=o.FilteredValues
 local s=""
 
 if o.Multi then
@@ -3785,7 +3854,20 @@ o.UIElements.MenuCanvas.Size=UDim2.new(0,s+6+6+5+5+18+6+6,o.UIElements.MenuCanva
 end
 
 
-o:Refresh(o.Values)
+o:Refresh(o.FilteredValues)
+
+
+if o.SearchEnabled and o.UIElements.SearchInput then
+h.AddSignal(o.UIElements.SearchInput:GetPropertyChangedSignal"Text",function()
+local q=o.UIElements.SearchInput.Text
+o.SearchQuery=q
+o:FilterValues(q)
+end)
+
+h.AddSignal(o.UIElements.SearchInput.FocusLost,function()
+
+end)
+end
 
 function o.Select(q,r)
 if r then
@@ -3798,7 +3880,7 @@ o.Value=nil
 
 end
 end
-o:Refresh(o.Values)
+o:FilterValues(o.SearchQuery)
 end
 
 
@@ -3831,8 +3913,16 @@ end)
 UpdatePosition()
 end
 end
+
 function o.Close(q)
 o.Opened=false
+
+
+if o.SearchEnabled and o.UIElements.SearchInput then
+o.UIElements.SearchInput.Text=""
+o.SearchQuery=""
+o:FilterValues""
+end
 
 j(o.UIElements.Menu,0.25,{
 Size=UDim2.new(
@@ -3869,7 +3959,7 @@ n.Window.CanDropdown
 and o.Opened
 and(e.X<r.X
 or e.X>r.X+s.X
-or e.Y<(r.Y-20-1)
+or e.Y<r.Y
 or e.Y>r.Y+s.Y
 )
 then

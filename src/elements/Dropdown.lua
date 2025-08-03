@@ -1,6 +1,7 @@
 local UserInputService = game:GetService("UserInputService")
 local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
 local Camera = game:GetService("Workspace").CurrentCamera
+local TextService = game:GetService("TextService")
 
 local Creator = require("../modules/Creator")
 local New = Creator.New
@@ -25,6 +26,8 @@ function Element:New(Config)
         Values = Config.Values or {},
         MenuWidth = Config.MenuWidth or 170,
         Value = Config.Value,
+        SearchEnabled = Config.SearchEnabled ~= false, -- Default true
+        SearchPlaceholder = Config.SearchPlaceholder or "Search...",
         AllowNone = Config.AllowNone,
         Multi = Config.Multi,
         Callback = Config.Callback or function() end,
@@ -32,12 +35,17 @@ function Element:New(Config)
         UIElements = {},
         
         Opened = false,
-        Tabs = {}
+        Tabs = {},
+        FilteredValues = {},
+        SearchQuery = ""
     }
     
     if Dropdown.Multi and not Dropdown.Value then
         Dropdown.Value = {}
     end
+    
+    -- Initialize filtered values
+    Dropdown.FilteredValues = Dropdown.Values
     
     local CanCallback = true
     
@@ -95,9 +103,55 @@ function Element:New(Config)
             PaddingRight = UDim.new(0, Element.MenuPadding),
             PaddingBottom = UDim.new(0, Element.MenuPadding),
         }),
+        -- Search Input (if enabled)
+        Dropdown.SearchEnabled and New("Frame", {
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundColor3 = Color3.fromRGB(245, 245, 245),
+            BorderSizePixel = 0,
+            Name = "SearchContainer"
+        }, {
+            New("UICorner", {
+                CornerRadius = UDim.new(0, 6)
+            }),
+            New("UIPadding", {
+                PaddingLeft = UDim.new(0, 8),
+                PaddingRight = UDim.new(0, 8),
+                PaddingTop = UDim.new(0, 4),
+                PaddingBottom = UDim.new(0, 4),
+            }),
+            New("TextBox", {
+                Size = UDim2.new(1, -20, 1, 0),
+                Position = UDim2.new(0, 20, 0, 0),
+                BackgroundTransparency = 1,
+                Text = "",
+                PlaceholderText = Dropdown.SearchPlaceholder,
+                TextSize = 14,
+                TextXAlignment = "Left",
+                FontFace = Font.new(Creator.Font, Enum.FontWeight.Regular),
+                ThemeTag = {
+                    TextColor3 = "Text",
+                    PlaceholderColor3 = "SubText"
+                },
+                Name = "SearchInput",
+                ClearTextOnFocus = false
+            }),
+            New("ImageLabel", {
+                Image = Creator.Icon("search")[1],
+                ImageRectOffset = Creator.Icon("search")[2].ImageRectPosition,
+                ImageRectSize = Creator.Icon("search")[2].ImageRectSize,
+                Size = UDim2.new(0, 16, 0, 16),
+                Position = UDim2.new(0, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundTransparency = 1,
+                ThemeTag = {
+                    ImageColor3 = "SubText"
+                }
+            })
+        }) or nil,
 		New("Frame", {
 		    BackgroundTransparency = 1,
-		    Size = UDim2.new(1,0,1,0),
+		    Size = Dropdown.SearchEnabled and UDim2.new(1,0,1,-37) or UDim2.new(1,0,1,0),
+		    Position = Dropdown.SearchEnabled and UDim2.new(0,0,0,37) or UDim2.new(0,0,0,0),
 		    --Name = "CanvasGroup",
 		    ClipsDescendants = true
 		}, {
@@ -119,14 +173,14 @@ function Element:New(Config)
     })
 
     Dropdown.UIElements.MenuCanvas = New("Frame", {
-        Size = UDim2.new(0,Dropdown.MenuWidth,0,300),
+        Size = UDim2.new(0,Dropdown.MenuWidth,0,Dropdown.SearchEnabled and 337 or 300),
         BackgroundTransparency = 1,
-        Position = UDim2.new(-10,0,-10,0),
+        Position = UDim2.new(0,0,1,5), -- Always position below the dropdown
         Visible = false,
         Active = false,
         --GroupTransparency = 1, -- 0
         Parent = Config.WindUI.DropdownGui,
-        AnchorPoint = Vector2.new(1,0),
+        AnchorPoint = Vector2.new(0,0),
     }, {
         Dropdown.UIElements.Menu,
         -- New("UIPadding", {
@@ -139,6 +193,11 @@ function Element:New(Config)
             MinSize = Vector2.new(170,0)
         })
     })
+    
+    -- Get search input if search is enabled
+    if Dropdown.SearchEnabled then
+        Dropdown.UIElements.SearchInput = Dropdown.UIElements.Menu.SearchContainer.SearchInput
+    end
     
     function Dropdown:Lock()
         CanCallback = false
@@ -159,36 +218,46 @@ function Element:New(Config)
 
     local function RecalculateListSize()
 		if #Dropdown.Values > 10 then
-			Dropdown.UIElements.MenuCanvas.Size = UDim2.fromOffset(Dropdown.UIElements.MenuCanvas.AbsoluteSize.X, 392)
+			Dropdown.UIElements.MenuCanvas.Size = UDim2.fromOffset(Dropdown.UIElements.MenuCanvas.AbsoluteSize.X, Dropdown.SearchEnabled and 429 or 392)
 		else
-			Dropdown.UIElements.MenuCanvas.Size = UDim2.fromOffset(Dropdown.UIElements.MenuCanvas.AbsoluteSize.X, Dropdown.UIElements.UIListLayout.AbsoluteContentSize.Y + (Element.MenuPadding*2))
+			local baseHeight = Dropdown.UIElements.UIListLayout.AbsoluteContentSize.Y + (Element.MenuPadding*2)
+			local searchHeight = Dropdown.SearchEnabled and 37 or 0
+			Dropdown.UIElements.MenuCanvas.Size = UDim2.fromOffset(Dropdown.UIElements.MenuCanvas.AbsoluteSize.X, baseHeight + searchHeight)
 		end
 	end
     
+    -- Updated positioning function to always place dropdown below
     function UpdatePosition()
         local button = Dropdown.UIElements.Dropdown
         local menu = Dropdown.UIElements.MenuCanvas
         
-        local availableSpaceBelow = Camera.ViewportSize.Y - (button.AbsolutePosition.Y + button.AbsoluteSize.Y) - Element.MenuPadding - 54
-        local requiredSpace = menu.AbsoluteSize.Y + Element.MenuPadding
-        
-        local offset = -54 -- topbar offset
-        if availableSpaceBelow < requiredSpace then
-            offset = requiredSpace - availableSpaceBelow - 54
-        end
-        
+        -- Always position below the dropdown button
         menu.Position = UDim2.new(
             0, 
-            button.AbsolutePosition.X + button.AbsoluteSize.X,
+            button.AbsolutePosition.X,
             0, 
-            button.AbsolutePosition.Y + button.AbsoluteSize.Y - offset + Element.MenuPadding 
+            button.AbsolutePosition.Y + button.AbsoluteSize.Y + 5
         )
     end
     
-    
+    -- Filter function for search
+    function Dropdown:FilterValues(query)
+        if not query or query == "" then
+            Dropdown.FilteredValues = Dropdown.Values
+        else
+            Dropdown.FilteredValues = {}
+            local lowerQuery = string.lower(query)
+            for _, value in ipairs(Dropdown.Values) do
+                if string.find(string.lower(value), lowerQuery, 1, true) then
+                    table.insert(Dropdown.FilteredValues, value)
+                end
+            end
+        end
+        Dropdown:Refresh(Dropdown.FilteredValues)
+    end
     
     function Dropdown:Display()
-		local Values = Dropdown.Values
+		local Values = Dropdown.FilteredValues
 		local Str = ""
 
 		if Dropdown.Multi then
@@ -214,7 +283,7 @@ function Element:New(Config)
         
         Dropdown.Tabs = {}
         
-        for Index,Tab in next, Values do
+        for Index, Tab in next, Values do
             --task.wait(0.012)
             local TabMain = {
                 Name = Tab,
@@ -384,7 +453,20 @@ function Element:New(Config)
     end
     
       
-    Dropdown:Refresh(Dropdown.Values)
+    Dropdown:Refresh(Dropdown.FilteredValues)
+    
+    -- Setup search functionality
+    if Dropdown.SearchEnabled and Dropdown.UIElements.SearchInput then
+        Creator.AddSignal(Dropdown.UIElements.SearchInput:GetPropertyChangedSignal("Text"), function()
+            local query = Dropdown.UIElements.SearchInput.Text
+            Dropdown.SearchQuery = query
+            Dropdown:FilterValues(query)
+        end)
+        
+        Creator.AddSignal(Dropdown.UIElements.SearchInput.FocusLost, function()
+            -- Keep dropdown open when search loses focus
+        end)
+    end
     
     function Dropdown:Select(Items)
         if Items then
@@ -397,7 +479,7 @@ function Element:New(Config)
                 
             end
         end
-        Dropdown:Refresh(Dropdown.Values)
+        Dropdown:FilterValues(Dropdown.SearchQuery)
     end
     
     --Dropdown:Display()
@@ -430,8 +512,16 @@ function Element:New(Config)
             UpdatePosition()
         end
     end
+    
     function Dropdown:Close()
         Dropdown.Opened = false
+        
+        -- Clear search when closing
+        if Dropdown.SearchEnabled and Dropdown.UIElements.SearchInput then
+            Dropdown.UIElements.SearchInput.Text = ""
+            Dropdown.SearchQuery = ""
+            Dropdown:FilterValues("")
+        end
         
         Tween(Dropdown.UIElements.Menu, 0.25, {
             Size = UDim2.new(
@@ -468,7 +558,7 @@ function Element:New(Config)
 				and Dropdown.Opened
 				and (Mouse.X < AbsPos.X
                     or Mouse.X > AbsPos.X + AbsSize.X
-                    or Mouse.Y < (AbsPos.Y - 20 - 1)
+                    or Mouse.Y < AbsPos.Y
                     or Mouse.Y > AbsPos.Y + AbsSize.Y
                 )
 			then
