@@ -106,7 +106,9 @@ function Element:New(Config)
         -- Search Input (if enabled)
         Dropdown.SearchEnabled and New("Frame", {
             Size = UDim2.new(1, 0, 0, 32),
-            BackgroundColor3 = Color3.fromRGB(245, 245, 245),
+            ThemeTag = {
+                BackgroundColor3 = "ElementBackground"
+            },
             BorderSizePixel = 0,
             Name = "SearchContainer"
         }, {
