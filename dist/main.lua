@@ -3402,7 +3402,7 @@ return g end function a.v()
 local b=game:GetService"UserInputService"
 local e=game:GetService"Players".LocalPlayer:GetMouse()local g=
 game:GetService"Workspace".CurrentCamera
-game:GetService"TweenService"
+game:GetService"TextService"
 
 local h=a.load'a'
 local i=h.New
@@ -3414,46 +3414,41 @@ local l={
 UICorner=10,
 UIPadding=12,
 MenuCorner=15,
-MenuPadding=8,
-TabPadding=12,
-SearchPadding=6,
+MenuPadding=5,
+TabPadding=10,
 }
 
 function l.New(m,n)
 local o={
-__type="SearchDropdown",
-Title=n.Title or"Search Dropdown",
+__type="Dropdown",
+Title=n.Title or"Dropdown",
 Desc=n.Desc or nil,
 Locked=n.Locked or false,
 Values=n.Values or{},
-FilteredValues={},
-MenuWidth=n.MenuWidth or 200,
-MaxHeight=n.MaxHeight or 250,
+MenuWidth=n.MenuWidth or 170,
 Value=n.Value,
-AllowNone=n.AllowNone or true,
-Multi=n.Multi or false,
-Placeholder=n.Placeholder or"Search...",
+SearchEnabled=n.SearchEnabled~=false,
+SearchPlaceholder=n.SearchPlaceholder or"Search...",
+AllowNone=n.AllowNone,
+Multi=n.Multi,
 Callback=n.Callback or function()end,
 
 UIElements={},
 
 Opened=false,
 Tabs={},
-SearchText=""
+FilteredValues={},
+SearchQuery=""
 }
-
-
-o.FilteredValues={}
-for p,q in ipairs(o.Values)do
-table.insert(o.FilteredValues,q)
-end
 
 if o.Multi and not o.Value then
 o.Value={}
 end
 
-local p=true
 
+o.FilteredValues=o.Values
+
+local p=true
 
 o.DropdownFrame=a.load'n'{
 Title=o.Title,
@@ -3464,92 +3459,44 @@ Hover=false,
 }
 
 
-o.UIElements.Display=k("",nil,o.DropdownFrame.UIElements.Container)
-o.UIElements.Display.Frame.Frame.TextLabel.TextTruncate="AtEnd"
-o.UIElements.Display.Frame.Frame.TextLabel.Size=UDim2.new(1,-30,1,0)
-o.UIElements.Display.Size=UDim2.new(1,0,0,40)
+o.UIElements.Dropdown=k("",nil,o.DropdownFrame.UIElements.Container)
+
+o.UIElements.Dropdown.Frame.Frame.TextLabel.TextTruncate="AtEnd"
+o.UIElements.Dropdown.Frame.Frame.TextLabel.Size=UDim2.new(1,o.UIElements.Dropdown.Frame.Frame.TextLabel.Size.X.Offset-18-12-12,0,0)
+
+o.UIElements.Dropdown.Size=UDim2.new(1,0,0,40)
 
 
-local q=i("ImageLabel",{
-Image=h.Icon"chevron-down"[1],
-ImageRectOffset=h.Icon"chevron-down"[2].ImageRectPosition,
-ImageRectSize=h.Icon"chevron-down"[2].ImageRectSize,
-Size=UDim2.new(0,16,0,16),
-Position=UDim2.new(1,-18,0.5,0),
+
+
+
+
+i("ImageLabel",{
+Image=h.Icon"chevrons-up-down"[1],
+ImageRectOffset=h.Icon"chevrons-up-down"[2].ImageRectPosition,
+ImageRectSize=h.Icon"chevrons-up-down"[2].ImageRectSize,
+Size=UDim2.new(0,18,0,18),
+Position=UDim2.new(1,-12,0.5,0),
 ThemeTag={
 ImageColor3="Icon"
 },
 AnchorPoint=Vector2.new(1,0.5),
-Parent=o.UIElements.Display.Frame
+Parent=o.UIElements.Dropdown.Frame
 })
-
-
-o.UIElements.SearchFrame=i("Frame",{
-BackgroundColor3=Color3.fromRGB(45,45,45),
-BackgroundTransparency=0.1,
-Size=UDim2.new(1,0,0,36),
-Visible=false,
-Parent=o.DropdownFrame.UIElements.Container,
-BorderSizePixel=0,
-},{
-i("UICorner",{
-CornerRadius=UDim.new(0,l.UICorner),
-}),
-i("UIPadding",{
-PaddingTop=UDim.new(0,l.SearchPadding),
-PaddingLeft=UDim.new(0,l.SearchPadding+4),
-PaddingRight=UDim.new(0,l.SearchPadding+4),
-PaddingBottom=UDim.new(0,l.SearchPadding),
-}),
-i("Frame",{
-BackgroundTransparency=1,
-Size=UDim2.new(1,0,1,0),
-Name="ContentFrame"
-},{
-i("ImageLabel",{
-Image="rbxasset://textures/ui/GuiImagePlaceholder.png",
-Size=UDim2.new(0,16,0,16),
-Position=UDim2.new(0,0,0.5,0),
-ImageColor3=Color3.fromRGB(150,150,150),
-AnchorPoint=Vector2.new(0,0.5),
-BackgroundTransparency=1,
-Name="SearchIcon"
-}),
-i("TextBox",{
-PlaceholderText=o.Placeholder,
-Text="",
-TextXAlignment="Left",
-Font=Enum.Font.Gotham,
-TextColor3=Color3.fromRGB(255,255,255),
-PlaceholderColor3=Color3.fromRGB(150,150,150),
-TextSize=14,
-BackgroundTransparency=1,
-BorderSizePixel=0,
-Size=UDim2.new(1,-20,1,0),
-Position=UDim2.new(0,20,0,0),
-ClearTextOnFocus=false,
-Name="SearchInput"
-})
-})
-})
-
-o.UIElements.SearchInput=o.UIElements.SearchFrame.Frame.SearchInput
-
 
 o.UIElements.UIListLayout=i("UIListLayout",{
-Padding=UDim.new(0,2),
+Padding=UDim.new(0,l.MenuPadding),
 FillDirection="Vertical"
 })
-
 
 o.UIElements.Menu=h.NewRoundFrame(l.MenuCorner,"Squircle",{
 ThemeTag={
 ImageColor3="Background",
 },
-ImageTransparency=0.02,
+ImageTransparency=0.05,
 Size=UDim2.new(1,0,1,0),
-AnchorPoint=Vector2.new(0,0),
-Position=UDim2.new(0,0,0,0),
+AnchorPoint=Vector2.new(1,0),
+Position=UDim2.new(1,0,0,0),
 },{
 i("UIPadding",{
 PaddingTop=UDim.new(0,l.MenuPadding),
@@ -3557,9 +3504,58 @@ PaddingLeft=UDim.new(0,l.MenuPadding),
 PaddingRight=UDim.new(0,l.MenuPadding),
 PaddingBottom=UDim.new(0,l.MenuPadding),
 }),
+
+o.SearchEnabled and i("Frame",{
+Size=UDim2.new(1,0,0,32),
+ThemeTag={
+BackgroundColor3="ElementBackground"
+},
+BorderSizePixel=0,
+Name="SearchContainer"
+},{
+i("UICorner",{
+CornerRadius=UDim.new(0,6)
+}),
+i("UIPadding",{
+PaddingLeft=UDim.new(0,8),
+PaddingRight=UDim.new(0,8),
+PaddingTop=UDim.new(0,4),
+PaddingBottom=UDim.new(0,4),
+}),
+i("TextBox",{
+Size=UDim2.new(1,-20,1,0),
+Position=UDim2.new(0,20,0,0),
+BackgroundTransparency=1,
+Text="",
+PlaceholderText=o.SearchPlaceholder,
+TextSize=14,
+TextXAlignment="Left",
+FontFace=Font.new(h.Font,Enum.FontWeight.Regular),
+ThemeTag={
+TextColor3="Text",
+PlaceholderColor3="SubText"
+},
+Name="SearchInput",
+ClearTextOnFocus=false
+}),
+i("ImageLabel",{
+Image=h.Icon"search"[1],
+ImageRectOffset=h.Icon"search"[2].ImageRectPosition,
+ImageRectSize=h.Icon"search"[2].ImageRectSize,
+Size=UDim2.new(0,16,0,16),
+Position=UDim2.new(0,0,0.5,0),
+AnchorPoint=Vector2.new(0,0.5),
+BackgroundTransparency=1,
+ThemeTag={
+ImageColor3="SubText"
+}
+})
+})or nil,
 i("Frame",{
 BackgroundTransparency=1,
-Size=UDim2.new(1,0,1,0),
+Size=o.SearchEnabled and UDim2.new(1,0,1,-37)or UDim2.new(1,0,1,0),
+Position=o.SearchEnabled and UDim2.new(0,0,0,37)or UDim2.new(0,0,0,0),
+
 ClipsDescendants=true
 },{
 i("UICorner",{
@@ -3567,55 +3563,50 @@ CornerRadius=UDim.new(0,l.MenuCorner-l.MenuPadding),
 }),
 i("ScrollingFrame",{
 Size=UDim2.new(1,0,1,0),
-ScrollBarThickness=3,
+ScrollBarThickness=0,
 ScrollingDirection="Y",
 AutomaticCanvasSize="Y",
 CanvasSize=UDim2.new(0,0,0,0),
 BackgroundTransparency=1,
-ScrollBarImageTransparency=0.8,
-ThemeTag={
-ScrollBarImageColor3="SubText"
-},
-Name="DropdownScroll"
+ScrollBarImageTransparency=1,
 },{
 o.UIElements.UIListLayout,
 })
 })
 })
 
-
 o.UIElements.MenuCanvas=i("Frame",{
-Size=UDim2.new(0,o.MenuWidth,0,0),
+Size=UDim2.new(0,o.MenuWidth,0,o.SearchEnabled and 337 or 300),
 BackgroundTransparency=1,
-Position=UDim2.new(0,0,1,4),
+Position=UDim2.new(0,0,1,5),
 Visible=false,
-Active=true,
-Parent=o.DropdownFrame.UIElements.Container,
-ClipsDescendants=false,
+Active=false,
+
+Parent=n.WindUI.DropdownGui,
+AnchorPoint=Vector2.new(0,0),
 },{
 o.UIElements.Menu,
+
+
+
+
+
+
 i("UISizeConstraint",{
-MinSize=Vector2.new(180,0),
-MaxSize=Vector2.new(400,o.MaxHeight)
-}),
-
-i("ImageLabel",{
-Image="rbxasset://textures/ui/GuiImagePlaceholder.png",
-ImageTransparency=0.95,
-Size=UDim2.new(1,4,1,4),
-Position=UDim2.new(0,2,0,2),
-BackgroundTransparency=1,
-ZIndex=-1,
+MinSize=Vector2.new(170,0)
 })
 })
 
 
-function o.Lock(r)
+if o.SearchEnabled then
+o.UIElements.SearchInput=o.UIElements.Menu.SearchContainer.SearchInput
+end
+
+function o.Lock(q)
 p=false
 return o.DropdownFrame:Lock()
 end
-
-function o.Unlock(r)
+function o.Unlock(q)
 p=true
 return o.DropdownFrame:Unlock()
 end
@@ -3624,65 +3615,70 @@ if o.Locked then
 o:Lock()
 end
 
-
 local function RecalculateCanvasSize()
-local r=o.UIElements.Menu.Frame.DropdownScroll
-r.CanvasSize=UDim2.fromOffset(0,o.UIElements.UIListLayout.AbsoluteContentSize.Y)
+o.UIElements.Menu.Frame.ScrollingFrame.CanvasSize=UDim2.fromOffset(0,o.UIElements.UIListLayout.AbsoluteContentSize.Y)
 end
 
 local function RecalculateListSize()
-local r=o.UIElements.UIListLayout.AbsoluteContentSize.Y+(l.MenuPadding*2)
-local s=math.min(r,o.MaxHeight)
+if#o.Values>10 then
+o.UIElements.MenuCanvas.Size=UDim2.fromOffset(o.UIElements.MenuCanvas.AbsoluteSize.X,o.SearchEnabled and 429 or 392)
+else
+local q=o.UIElements.UIListLayout.AbsoluteContentSize.Y+(l.MenuPadding*2)
+local r=o.SearchEnabled and 37 or 0
+o.UIElements.MenuCanvas.Size=UDim2.fromOffset(o.UIElements.MenuCanvas.AbsoluteSize.X,q+r)
+end
+end
 
-o.UIElements.MenuCanvas.Size=UDim2.fromOffset(
-o.UIElements.MenuCanvas.AbsoluteSize.X,
-s
+
+function UpdatePosition()
+local q=o.UIElements.Dropdown
+local r=o.UIElements.MenuCanvas
+
+
+r.Position=UDim2.new(
+0,
+q.AbsolutePosition.X,
+0,
+q.AbsolutePosition.Y+q.AbsoluteSize.Y+5
 )
 end
 
 
-local function FilterValues(r)
-o.FilteredValues={}
-
-if r==""then
-for s,t in ipairs(o.Values)do
-table.insert(o.FilteredValues,t)
-end
+function o.FilterValues(q,r)
+if not r or r==""then
+o.FilteredValues=o.Values
 else
+o.FilteredValues={}
 local s=string.lower(r)
 for t,u in ipairs(o.Values)do
-if string.find(string.lower(tostring(u)),s,1,true)then
+if string.find(string.lower(u),s,1,true)then
 table.insert(o.FilteredValues,u)
 end
 end
 end
-
-o:RefreshItems()
+o:Refresh(o.FilteredValues)
 end
 
-
-function o.Display(r)
-local s=o.Values
-local t=""
+function o.Display(q)
+local r=o.FilteredValues
+local s=""
 
 if o.Multi then
-for u,v in next,s do
-if table.find(o.Value,v)then
-t=t..v..", "
+for t,u in next,r do
+if table.find(o.Value,u)then
+s=s..u..", "
 end
 end
-t=t:sub(1,#t-2)
+s=s:sub(1,#s-2)
 else
-t=o.Value or""
+s=o.Value or""
 end
 
-o.UIElements.Display.Frame.Frame.TextLabel.Text=(t==""and"Select..."or t)
+o.UIElements.Dropdown.Frame.Frame.TextLabel.Text=(s==""and"--"or s)
 end
 
-
-function o.RefreshItems(r)
-
-for s,t in next,o.UIElements.Menu.Frame.DropdownScroll:GetChildren()do
+function o.Refresh(q,r)
+for s,t in next,o.UIElements.Menu.Frame.ScrollingFrame:GetChildren()do
 if not t:IsA"UIListLayout"then
 t:Destroy()
 end
@@ -3690,74 +3686,67 @@ end
 
 o.Tabs={}
 
+for s,t in next,r do
 
-for s,t in next,o.FilteredValues do
 local u={
 Name=t,
 Selected=false,
 UIElements={},
 }
+u.UIElements.TabItem=h.NewRoundFrame(l.MenuCorner-l.MenuPadding,"Squircle",{
+Size=UDim2.new(1,0,0,34),
 
-
-u.UIElements.TabItem=i("TextButton",{
-Size=UDim2.new(1,0,0,32),
-BackgroundTransparency=1,
-Parent=o.UIElements.Menu.Frame.DropdownScroll,
-Text="",
-AutoButtonColor=false,
-},{
-h.NewRoundFrame(l.UICorner-2,"Squircle",{
-Size=UDim2.new(1,0,1,0),
 ImageTransparency=1,
-ImageColor3=Color3.new(1,1,1),
-Name="Background"
-}),
+Parent=o.UIElements.Menu.Frame.ScrollingFrame,
 
-h.NewRoundFrame(l.UICorner-2,"SquircleOutline",{
+
+
+},{
+h.NewRoundFrame(l.MenuCorner-l.MenuPadding,"SquircleOutline",{
 Size=UDim2.new(1,0,1,0),
 ImageColor3=Color3.new(1,1,1),
 ImageTransparency=1,
 Name="Highlight",
 },{
 i("UIGradient",{
-Rotation=90,
+Rotation=80,
 Color=ColorSequence.new{
 ColorSequenceKeypoint.new(0.0,Color3.fromRGB(255,255,255)),
-ColorSequenceKeypoint.new(1.0,Color3.fromRGB(200,200,255)),
+ColorSequenceKeypoint.new(0.5,Color3.fromRGB(255,255,255)),
+ColorSequenceKeypoint.new(1.0,Color3.fromRGB(255,255,255)),
 },
 Transparency=NumberSequence.new{
-NumberSequenceKeypoint.new(0.0,0.9),
-NumberSequenceKeypoint.new(1.0,0.95),
+NumberSequenceKeypoint.new(0.0,0.1),
+NumberSequenceKeypoint.new(0.5,1),
+NumberSequenceKeypoint.new(1.0,0.1),
 }
 }),
 }),
-
 i("Frame",{
 Size=UDim2.new(1,0,1,0),
 BackgroundTransparency=1,
 },{
 i("UIPadding",{
+
 PaddingLeft=UDim.new(0,l.TabPadding),
 PaddingRight=UDim.new(0,l.TabPadding),
+
 }),
 i("UICorner",{
-CornerRadius=UDim.new(0,l.UICorner-2)
+CornerRadius=UDim.new(0,l.MenuCorner-l.MenuPadding)
 }),
 
-i("Frame",{
-Size=UDim2.new(0,3,0.6,0),
-Position=UDim2.new(0,2,0.5,0),
-AnchorPoint=Vector2.new(0,0.5),
-BackgroundTransparency=1,
-ThemeTag={
-BackgroundColor3="Accent"
-},
-Name="SelectionBar"
-},{
-i("UICorner",{
-CornerRadius=UDim.new(0,2)
-})
-}),
+
+
+
+
+
+
+
+
+
+
+
 
 i("TextLabel",{
 Text=t,
@@ -3765,16 +3754,19 @@ TextXAlignment="Left",
 FontFace=Font.new(h.Font,Enum.FontWeight.Regular),
 ThemeTag={
 TextColor3="Text",
+BackgroundColor3="Text"
 },
-TextSize=14,
+TextSize=15,
 BackgroundTransparency=1,
-TextTransparency=0.2,
-Size=UDim2.new(1,-8,1,0),
-Position=UDim2.new(0,8,0,0),
-TextTruncate="AtEnd",
+TextTransparency=.4,
+AutomaticSize="Y",
+
+Size=UDim2.new(1,0,0,0),
+AnchorPoint=Vector2.new(0,0.5),
+Position=UDim2.new(0,0,0.5,0),
 })
 })
-})
+},true)
 
 
 if o.Multi then
@@ -3783,35 +3775,43 @@ else
 u.Selected=o.Value==u.Name
 end
 
-
 if u.Selected then
-u.UIElements.TabItem.Background.ImageTransparency=0.92
-u.UIElements.TabItem.Highlight.ImageTransparency=0.85
-u.UIElements.TabItem.Frame.TextLabel.TextTransparency=0
-u.UIElements.TabItem.Frame.SelectionBar.BackgroundTransparency=0
+u.UIElements.TabItem.ImageTransparency=.95
+u.UIElements.TabItem.Highlight.ImageTransparency=.75
+
+
+u.UIElements.TabItem.Frame.TextLabel.TextTransparency=0.05
 end
 
 o.Tabs[s]=u
 
+o:Display()
 
-local function HandleClick()
+local function Callback()
+o:Display()
+task.spawn(function()
+h.SafeCallback(o.Callback,o.Value)
+end)
+end
+
+h.AddSignal(u.UIElements.TabItem.MouseButton1Click,function()
 if o.Multi then
 if not u.Selected then
 u.Selected=true
-j(u.UIElements.TabItem.Background,0.15,{ImageTransparency=0.92}):Play()
-j(u.UIElements.TabItem.Highlight,0.15,{ImageTransparency=0.85}):Play()
-j(u.UIElements.TabItem.Frame.TextLabel,0.15,{TextTransparency=0}):Play()
-j(u.UIElements.TabItem.Frame.SelectionBar,0.15,{BackgroundTransparency=0}):Play()
+j(u.UIElements.TabItem,0.1,{ImageTransparency=.95}):Play()
+j(u.UIElements.TabItem.Highlight,0.1,{ImageTransparency=.75}):Play()
+
+j(u.UIElements.TabItem.Frame.TextLabel,0.1,{TextTransparency=0}):Play()
 table.insert(o.Value,u.Name)
 else
 if not o.AllowNone and#o.Value==1 then
 return
 end
 u.Selected=false
-j(u.UIElements.TabItem.Background,0.15,{ImageTransparency=1}):Play()
-j(u.UIElements.TabItem.Highlight,0.15,{ImageTransparency=1}):Play()
-j(u.UIElements.TabItem.Frame.TextLabel,0.15,{TextTransparency=0.2}):Play()
-j(u.UIElements.TabItem.Frame.SelectionBar,0.15,{BackgroundTransparency=1}):Play()
+j(u.UIElements.TabItem,0.1,{ImageTransparency=1}):Play()
+j(u.UIElements.TabItem.Highlight,0.1,{ImageTransparency=1}):Play()
+
+j(u.UIElements.TabItem.Frame.TextLabel,0.1,{TextTransparency=.4}):Play()
 for v,w in ipairs(o.Value)do
 if w==u.Name then
 table.remove(o.Value,v)
@@ -3820,189 +3820,157 @@ end
 end
 end
 else
-
 for v,w in next,o.Tabs do
-j(w.UIElements.TabItem.Background,0.15,{ImageTransparency=1}):Play()
-j(w.UIElements.TabItem.Highlight,0.15,{ImageTransparency=1}):Play()
-j(w.UIElements.TabItem.Frame.TextLabel,0.15,{TextTransparency=0.2}):Play()
-j(w.UIElements.TabItem.Frame.SelectionBar,0.15,{BackgroundTransparency=1}):Play()
+
+j(w.UIElements.TabItem,0.1,{ImageTransparency=1}):Play()
+j(w.UIElements.TabItem.Highlight,0.1,{ImageTransparency=1}):Play()
+
+j(w.UIElements.TabItem.Frame.TextLabel,0.1,{TextTransparency=.5}):Play()
 w.Selected=false
 end
 u.Selected=true
-j(u.UIElements.TabItem.Background,0.15,{ImageTransparency=0.92}):Play()
-j(u.UIElements.TabItem.Highlight,0.15,{ImageTransparency=0.85}):Play()
-j(u.UIElements.TabItem.Frame.TextLabel,0.15,{TextTransparency=0}):Play()
-j(u.UIElements.TabItem.Frame.SelectionBar,0.15,{BackgroundTransparency=0}):Play()
+j(u.UIElements.TabItem,0.1,{ImageTransparency=.95}):Play()
+j(u.UIElements.TabItem.Highlight,0.1,{ImageTransparency=.75}):Play()
+
+j(u.UIElements.TabItem.Frame.TextLabel,0.1,{TextTransparency=0.05}):Play()
 o.Value=u.Name
-
-
-task.wait(0.1)
-o:Close()
 end
-
-o:Display()
-if p then
-task.spawn(function()
-h.SafeCallback(o.Callback,o.Value)
-end)
-end
-end
-
-h.AddSignal(u.UIElements.TabItem.MouseButton1Click,HandleClick)
-
-
-h.AddSignal(u.UIElements.TabItem.MouseEnter,function()
-if not u.Selected then
-j(u.UIElements.TabItem.Background,0.1,{ImageTransparency=0.96}):Play()
-j(u.UIElements.TabItem.Highlight,0.1,{ImageTransparency=0.9}):Play()
-end
+Callback()
 end)
 
-h.AddSignal(u.UIElements.TabItem.MouseLeave,function()
-if not u.Selected then
-j(u.UIElements.TabItem.Background,0.1,{ImageTransparency=1}):Play()
-j(u.UIElements.TabItem.Highlight,0.1,{ImageTransparency=1}):Play()
-end
-end)
-end
-
-
-task.wait()
 RecalculateCanvasSize()
 RecalculateListSize()
+end
 
-
-local s=o.MenuWidth
+local s=0
 for t,u in next,o.Tabs do
 if u.UIElements.TabItem.Frame.TextLabel then
+
 local v=u.UIElements.TabItem.Frame.TextLabel.TextBounds.X
-s=math.max(s,v+l.TabPadding*2+20)
+s=math.max(s,v)
 end
 end
 
-o.UIElements.MenuCanvas.Size=UDim2.new(
-0,math.min(s,350),
-o.UIElements.MenuCanvas.Size.Y.Scale,
-o.UIElements.MenuCanvas.Size.Y.Offset
-)
+o.UIElements.MenuCanvas.Size=UDim2.new(0,s+6+6+5+5+18+6+6,o.UIElements.MenuCanvas.Size.Y.Scale,o.UIElements.MenuCanvas.Size.Y.Offset)
+
 end
 
 
-o:RefreshItems()
-o:Display()
+o:Refresh(o.FilteredValues)
 
 
-function o.Select(r,s)
-if s then
-o.Value=s
+if o.SearchEnabled and o.UIElements.SearchInput then
+h.AddSignal(o.UIElements.SearchInput:GetPropertyChangedSignal"Text",function()
+local q=o.UIElements.SearchInput.Text
+o.SearchQuery=q
+o:FilterValues(q)
+end)
+
+h.AddSignal(o.UIElements.SearchInput.FocusLost,function()
+
+end)
+end
+
+function o.Select(q,r)
+if r then
+o.Value=r
 else
 if o.Multi then
 o.Value={}
 else
 o.Value=nil
+
 end
 end
-o:RefreshItems()
-o:Display()
+o:FilterValues(o.SearchQuery)
 end
 
 
-function o.Open(r)
-if not p then return end
+RecalculateListSize()
 
-o.UIElements.SearchFrame.Visible=true
+function o.Open(q)
+if p then
+o.UIElements.Menu.Visible=true
 o.UIElements.MenuCanvas.Visible=true
 o.UIElements.MenuCanvas.Active=true
-
-
-o.UIElements.SearchFrame.Size=UDim2.new(1,0,0,0)
-j(o.UIElements.SearchFrame,0.2,{
-Size=UDim2.new(1,0,0,36)
+o.UIElements.Menu.Size=UDim2.new(
+1,0,
+0,0
+)
+j(o.UIElements.Menu,0.1,{
+Size=UDim2.new(
+1,0,
+1,0
+)
 },Enum.EasingStyle.Quart,Enum.EasingDirection.Out):Play()
 
-
-o.UIElements.Menu.Size=UDim2.new(1,0,0,0)
-j(o.UIElements.Menu,0.25,{
-Size=UDim2.new(1,0,1,0)
-},Enum.EasingStyle.Quart,Enum.EasingDirection.Out):Play()
-
-
-j(q,0.2,{Rotation=180}):Play()
-
-
-task.wait(0.2)
-o.UIElements.SearchInput:CaptureFocus()
+task.spawn(function()
+task.wait(.1)
 o.Opened=true
+end)
+
+
+
+
+UpdatePosition()
+end
 end
 
-
-function o.Close(r)
+function o.Close(q)
 o.Opened=false
 
 
-j(o.UIElements.Menu,0.2,{
-Size=UDim2.new(1,0,0,0)
-},Enum.EasingStyle.Quart,Enum.EasingDirection.Out):Play()
-
-
-j(o.UIElements.SearchFrame,0.15,{
-Size=UDim2.new(1,0,0,0)
-},Enum.EasingStyle.Quart,Enum.EasingDirection.Out):Play()
-
-
-j(q,0.2,{Rotation=0}):Play()
-
-
+if o.SearchEnabled and o.UIElements.SearchInput then
 o.UIElements.SearchInput.Text=""
-o.SearchText=""
-FilterValues""
+o.SearchQuery=""
+o:FilterValues""
+end
+
+j(o.UIElements.Menu,0.25,{
+Size=UDim2.new(
+1,0,
+0,0
+)
+},Enum.EasingStyle.Quart,Enum.EasingDirection.Out):Play()
 
 
 task.spawn(function()
-task.wait(0.2)
-o.UIElements.SearchFrame.Visible=false
+task.wait(.2)
+o.UIElements.Menu.Visible=false
+end)
+
+task.spawn(function()
+task.wait(.25)
 o.UIElements.MenuCanvas.Visible=false
 o.UIElements.MenuCanvas.Active=false
 end)
 end
 
-
-h.AddSignal(o.UIElements.Display.MouseButton1Click,function()
-if o.Opened then
-o:Close()
-else
+h.AddSignal(o.UIElements.Dropdown.MouseButton1Click,function()
 o:Open()
-end
 end)
 
-
-h.AddSignal(o.UIElements.SearchInput:GetPropertyChangedSignal"Text",function()
-local r=o.UIElements.SearchInput.Text
-if r~=o.SearchText then
-o.SearchText=r
-FilterValues(r)
-end
-end)
-
-
-h.AddSignal(b.InputBegan,function(r)
-if(r.UserInputType==Enum.UserInputType.MouseButton1 or r.UserInputType==Enum.UserInputType.Touch)then
-if n.Window.CanDropdown and o.Opened then
-local s,t=o.UIElements.SearchFrame.AbsolutePosition,o.UIElements.SearchFrame.AbsoluteSize
-local u,v=o.UIElements.MenuCanvas.AbsolutePosition,o.UIElements.MenuCanvas.AbsoluteSize
-
-local w,x=e.X,e.Y
-local y=w>=s.X and w<=s.X+t.X and
-x>=s.Y and x<=s.Y+t.Y
-local z=w>=u.X and w<=u.X+v.X and
-x>=u.Y and x<=u.Y+v.Y
-
-if not y and not z then
+h.AddSignal(b.InputBegan,function(q)
+if
+q.UserInputType==Enum.UserInputType.MouseButton1
+or q.UserInputType==Enum.UserInputType.Touch
+then
+local r,s=o.UIElements.MenuCanvas.AbsolutePosition,o.UIElements.MenuCanvas.AbsoluteSize
+if
+n.Window.CanDropdown
+and o.Opened
+and(e.X<r.X
+or e.X>r.X+s.X
+or e.Y<r.Y
+or e.Y>r.Y+s.Y
+)
+then
 o:Close()
 end
 end
-end
 end)
+
+h.AddSignal(o.UIElements.Dropdown:GetPropertyChangedSignal"AbsolutePosition",UpdatePosition)
 
 return o.__type,o
 end
