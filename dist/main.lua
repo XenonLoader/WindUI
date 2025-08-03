@@ -3711,9 +3711,9 @@ Name="Highlight",
 i("UIGradient",{
 Rotation=80,
 Color=ColorSequence.new{
-ColorSequenceKeypoint.new(0.0,Color3.fromRGB(255,255,255)),
-ColorSequenceKeypoint.new(0.5,Color3.fromRGB(255,255,255)),
-ColorSequenceKeypoint.new(1.0,Color3.fromRGB(255,255,255)),
+
+
+
 },
 Transparency=NumberSequence.new{
 NumberSequenceKeypoint.new(0.0,0.1),
