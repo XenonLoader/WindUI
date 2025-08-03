@@ -1,66 +1,64 @@
--- Config Manager for WindUI
--- Enhanced version with save/delete functionality and Config Tab
+-- credits: dawid
 local HttpService = game:GetService("HttpService")
 
-local ConfigManager = {
+local ConfigManager
+ConfigManager = {
     Window = nil,
     Folder = nil,
     Path = nil,
     Configs = {},
-    Elements = {},
     ConfigTab = nil,
+    Elements = {},
     Parser = {
         Colorpicker = {
             Save = function(obj)
                 return {
-                    __type = "Colorpicker",
-                    value = obj.Value and obj.Value:ToHex() or "#FFFFFF",
-                    transparency = obj.Transparency or 0,
+                    __type = obj.__type,
+                    value = obj.Default:ToHex(),
+                    transparency = obj.Transparency or nil,
                 }
             end,
             Load = function(element, data)
-                if element and element.Set then
-                    local color = Color3.fromHex(data.value or "#FFFFFF")
-                    element:Set(color, data.transparency or 0)
+                if element then
+                    element:Update(Color3.fromHex(data.value), data.transparency or nil)
                 end
             end
         },
         Dropdown = {
             Save = function(obj)
                 return {
-                    __type = "Dropdown",
+                    __type = obj.__type,
                     value = obj.Value,
-                    multi = obj.Multi or false,
                 }
             end,
             Load = function(element, data)
-                if element and element.Set then
-                    element:Set(data.value)
+                if element then
+                    element:Select(data.value)
                 end
             end
         },
         Input = {
             Save = function(obj)
                 return {
-                    __type = "Input",
-                    value = obj.Value or "",
+                    __type = obj.__type,
+                    value = obj.Value,
                 }
             end,
             Load = function(element, data)
-                if element and element.Set then
-                    element:Set(data.value or "")
+                if element then
+                    element:Set(data.value)
                 end
             end
         },
         Keybind = {
             Save = function(obj)
                 return {
-                    __type = "Keybind",
+                    __type = obj.__type,
                     value = obj.Value,
                 }
             end,
             Load = function(element, data)
-                if element and element.Set then
+                if element then
                     element:Set(data.value)
                 end
             end
@@ -68,45 +66,47 @@ local ConfigManager = {
         Slider = {
             Save = function(obj)
                 return {
-                    __type = "Slider",
-                    value = obj.Value or 0,
+                    __type = obj.__type,
+                    value = obj.Value.Default,
                 }
             end,
             Load = function(element, data)
-                if element and element.Set then
-                    element:Set(data.value or 0)
+                if element then
+                    element:Set(data.value)
                 end
             end
         },
         Toggle = {
             Save = function(obj)
                 return {
-                    __type = "Toggle",
-                    value = obj.Value or false,
+                    __type = obj.__type,
+                    value = obj.Value,
                 }
             end,
             Load = function(element, data)
-                if element and element.Set then
-                    element:Set(data.value or false)
+                if element then
+                    element:Set(data.value)
                 end
             end
         },
     }
 }
 
-function ConfigManager:Init(Window, FolderName)
-    if not FolderName then
-        warn("[ ConfigManager ] Folder name is not specified.")
+function ConfigManager:Init(Window)
+    if not Window.Folder then
+        warn("[ WindUI.ConfigManager ] Window.Folder is not specified.")
+        
         return false
     end
-
+    
     ConfigManager.Window = Window
-    ConfigManager.Folder = FolderName
-    ConfigManager.Path = "WindUI/" .. tostring(ConfigManager.Folder) .. "/"
+    ConfigManager.Folder = Window.Folder
+    ConfigManager.Path = "WindUI/" .. tostring(ConfigManager.Folder) .. "/config/"
     
     -- Create folder if it doesn't exist
     pcall(function()
         makefolder("WindUI")
+        makefolder("WindUI/" .. tostring(ConfigManager.Folder))
         makefolder(ConfigManager.Path)
     end)
 
@@ -146,7 +146,7 @@ function ConfigManager:CreateConfigTab()
 
     local configsDropdown
     local function refreshConfigsList()
-        local configs = ConfigManager:GetAllConfigs()
+        local configs = ConfigManager:AllConfigs() or {}
         if configsDropdown then
             configsDropdown:Refresh(configs)
         end
@@ -173,18 +173,35 @@ function ConfigManager:CreateConfigTab()
         Desc = "Save current settings to config file",
         Callback = function()
             if configNameInput ~= "" then
-                local success, message = ConfigManager:SaveConfig(configNameInput)
-                if success then
-                    ConfigManager.Window:Notify({
-                        Title = "Config Saved",
-                        Content = "Config '" .. configNameInput .. "' saved successfully!",
-                        Duration = 3,
-                    })
-                    refreshConfigsList()
+                local config = ConfigManager:CreateConfig(configNameInput)
+                if config then
+                    -- Register all elements
+                    for name, element in pairs(ConfigManager.Elements) do
+                        config:Register(name, element)
+                    end
+                    
+                    local success, message = pcall(function()
+                        config:Save()
+                    end)
+                    
+                    if success then
+                        ConfigManager.Window:Notify({
+                            Title = "Config Saved",
+                            Content = "Config '" .. configNameInput .. "' saved successfully!",
+                            Duration = 3,
+                        })
+                        refreshConfigsList()
+                    else
+                        ConfigManager.Window:Notify({
+                            Title = "Save Error",
+                            Content = "Failed to save config: " .. tostring(message),
+                            Duration = 3,
+                        })
+                    end
                 else
                     ConfigManager.Window:Notify({
                         Title = "Save Error",
-                        Content = message or "Failed to save config",
+                        Content = "Failed to create config",
                         Duration = 3,
                     })
                 end
@@ -203,17 +220,34 @@ function ConfigManager:CreateConfigTab()
         Desc = "Load settings from selected config file",
         Callback = function()
             if selectedConfigName ~= "" then
-                local success, message = ConfigManager:LoadConfig(selectedConfigName)
-                if success then
-                    ConfigManager.Window:Notify({
-                        Title = "Config Loaded",
-                        Content = "Config '" .. selectedConfigName .. "' loaded successfully!",
-                        Duration = 3,
-                    })
+                local config = ConfigManager:CreateConfig(selectedConfigName)
+                if config then
+                    -- Register all elements
+                    for name, element in pairs(ConfigManager.Elements) do
+                        config:Register(name, element)
+                    end
+                    
+                    local success, message = pcall(function()
+                        config:Load()
+                    end)
+                    
+                    if success then
+                        ConfigManager.Window:Notify({
+                            Title = "Config Loaded",
+                            Content = "Config '" .. selectedConfigName .. "' loaded successfully!",
+                            Duration = 3,
+                        })
+                    else
+                        ConfigManager.Window:Notify({
+                            Title = "Load Error",
+                            Content = "Failed to load config: " .. tostring(message),
+                            Duration = 3,
+                        })
+                    end
                 else
                     ConfigManager.Window:Notify({
                         Title = "Load Error",
-                        Content = message or "Failed to load config",
+                        Content = "Failed to create config instance",
                         Duration = 3,
                     })
                 end
@@ -232,21 +266,34 @@ function ConfigManager:CreateConfigTab()
         Desc = "Delete selected config file",
         Callback = function()
             if selectedConfigName ~= "" then
-                local success, message = ConfigManager:DeleteConfig(selectedConfigName)
-                if success then
-                    ConfigManager.Window:Notify({
-                        Title = "Config Deleted",
-                        Content = "Config '" .. selectedConfigName .. "' deleted successfully!",
-                        Duration = 3,
-                    })
-                    selectedConfigName = ""
-                    configNameInput = ""
-                    configNameInputElement:Set("")
-                    refreshConfigsList()
+                local filePath = ConfigManager.Path .. selectedConfigName .. ".json"
+                
+                if isfile(filePath) then
+                    local success, message = pcall(function()
+                        delfile(filePath)
+                    end)
+                    
+                    if success then
+                        ConfigManager.Window:Notify({
+                            Title = "Config Deleted",
+                            Content = "Config '" .. selectedConfigName .. "' deleted successfully!",
+                            Duration = 3,
+                        })
+                        selectedConfigName = ""
+                        configNameInput = ""
+                        configNameInputElement:Set("")
+                        refreshConfigsList()
+                    else
+                        ConfigManager.Window:Notify({
+                            Title = "Delete Error",
+                            Content = "Failed to delete config: " .. tostring(message),
+                            Duration = 3,
+                        })
+                    end
                 else
                     ConfigManager.Window:Notify({
                         Title = "Delete Error",
-                        Content = message or "Failed to delete config",
+                        Content = "Config file not found",
                         Duration = 3,
                     })
                 end
@@ -274,168 +321,80 @@ function ConfigManager:CreateConfigTab()
     })
 end
 
-function ConfigManager:Register(Name, Element, ElementType)
+function ConfigManager:Register(Name, Element)
     if not Element then
         warn("[ ConfigManager ] Element is nil for:", Name)
         return
     end
     
-    ConfigManager.Elements[Name] = {
-        element = Element,
-        type = ElementType or "Toggle"
-    }
+    ConfigManager.Elements[Name] = Element
 end
 
-function ConfigManager:SaveConfig(configName)
-    if not configName or configName == "" then
-        return false, "No config name specified"
-    end
-
-    local saveData = {
-        ConfigName = configName,
-        SavedAt = os.date("%Y-%m-%d %H:%M:%S"),
+function ConfigManager:CreateConfig(configFilename)
+    local ConfigModule = {
+        Path = ConfigManager.Path .. configFilename .. ".json",
+        
         Elements = {}
     }
     
-    for name, elementData in pairs(ConfigManager.Elements) do
-        local element = elementData.element
-        local elementType = elementData.type
-        
-        if element and ConfigManager.Parser[elementType] then
-            local success, result = pcall(function()
-                return ConfigManager.Parser[elementType].Save(element)
-            end)
-            
-            if success then
-                saveData.Elements[name] = result
-            else
-                warn("[ ConfigManager ] Failed to save element:", name, result)
-            end
-        end
+    if not configFilename then
+        return false, "No config file is selected"
     end
-    
-    local filePath = ConfigManager.Path .. configName .. ".json"
-    local success, error = pcall(function()
-        writefile(filePath, HttpService:JSONEncode(saveData))
-    end)
-    
-    if success then
-        return true, "Config saved successfully"
-    else
-        return false, "Failed to save config: " .. tostring(error)
-    end
-end
 
-function ConfigManager:LoadConfig(configName)
-    if not configName or configName == "" then
-        return false, "No config name specified"
+    function ConfigModule:Register(Name, Element)
+        ConfigModule.Elements[Name] = Element
     end
     
-    local filePath = ConfigManager.Path .. configName .. ".json"
-    
-    if not isfile(filePath) then
-        return false, "Config file not found"
-    end
-    
-    local success, loadData = pcall(function()
-        return HttpService:JSONDecode(readfile(filePath))
-    end)
-    
-    if not success then
-        return false, "Failed to decode config file"
-    end
-    
-    if not loadData or not loadData.Elements then
-        return false, "Invalid config file format"
-    end
-    
-    local loadedCount = 0
-    for name, data in pairs(loadData.Elements) do
-        if ConfigManager.Elements[name] and ConfigManager.Parser[data.__type] then
-            local element = ConfigManager.Elements[name].element
-            
-            task.spawn(function()
-                local success, error = pcall(function()
-                    ConfigManager.Parser[data.__type].Load(element, data)
-                end)
-                
-                if success then
-                    loadedCount = loadedCount + 1
-                else
-                    warn("[ ConfigManager ] Failed to load element:", name, error)
-                end
-            end)
-        end
-    end
-    
-    return true, "Config loaded successfully (" .. loadedCount .. " elements)"
-end
-
-function ConfigManager:DeleteConfig(configName)
-    if not configName or configName == "" then
-        return false, "No config name specified"
-    end
-    
-    local filePath = ConfigManager.Path .. configName .. ".json"
-    
-    if not isfile(filePath) then
-        return false, "Config file not found"
-    end
-    
-    local success, error = pcall(function()
-        delfile(filePath)
-    end)
-    
-    if success then
-        return true, "Config deleted successfully"
-    else
-        return false, "Failed to delete config: " .. tostring(error)
-    end
-end
-
-function ConfigManager:GetAllConfigs()
-    local configs = {}
-    
-    local success, files = pcall(function()
-        return listfiles(ConfigManager.Path)
-    end)
-    
-    if success and files then
-        for _, file in ipairs(files) do
-            local configName = file:match("([^/\\]+)%.json$")
-            if configName then
-                table.insert(configs, configName)
-            end
-        end
-    end
-    
-    return configs
-end
-
-function ConfigManager:GetConfigInfo(configName)
-    if not configName or configName == "" then
-        return nil
-    end
-    
-    local filePath = ConfigManager.Path .. configName .. ".json"
-    
-    if not isfile(filePath) then
-        return nil
-    end
-    
-    local success, data = pcall(function()
-        return HttpService:JSONDecode(readfile(filePath))
-    end)
-    
-    if success and data then
-        return {
-            name = data.ConfigName or configName,
-            savedAt = data.SavedAt or "Unknown",
-            elementCount = data.Elements and #data.Elements or 0
+    function ConfigModule:Save()
+        local saveData = {
+            Elements = {}
         }
+        
+        for name,i in next, ConfigModule.Elements do
+            if ConfigManager.Parser[i.__type] then
+                saveData.Elements[tostring(name)] = ConfigManager.Parser[i.__type].Save(i)
+            end
+        end
+        
+        print(HttpService:JSONEncode(saveData))
+        
+        writefile(ConfigModule.Path, HttpService:JSONEncode(saveData))
     end
     
-    return nil
+    function ConfigModule:Load()
+        if not isfile(ConfigModule.Path) then return false, "Invalid file" end
+        
+        local loadData = HttpService:JSONDecode(readfile(ConfigModule.Path))
+        
+        for name, data in next, loadData.Elements do
+            if ConfigModule.Elements[name] and ConfigManager.Parser[data.__type] then
+                task.spawn(function()
+                    ConfigManager.Parser[data.__type].Load(ConfigModule.Elements[name], data)
+                end)
+            end
+        end
+        
+    end
+    
+    
+    ConfigManager.Configs[configFilename] = ConfigModule
+    
+    return ConfigModule
+end
+
+function ConfigManager:AllConfigs()
+    if listfiles then
+        local files = {}
+        for _, file in next, listfiles(ConfigManager.Path) do
+            local name = file:match("([^\\/]+)%.json$")
+            if name then
+                table.insert(files, name)
+            end
+        end
+        
+        return files
+    end
+    return false
 end
 
 return ConfigManager

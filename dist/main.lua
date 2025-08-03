@@ -1859,114 +1859,114 @@ end
 
 return b end function a.k()
 
-
 local b=game:GetService"HttpService"
 
-local d={
+local d
+d={
 Window=nil,
 Folder=nil,
 Path=nil,
 Configs={},
-Elements={},
 ConfigTab=nil,
+Elements={},
 Parser={
 Colorpicker={
-Save=function(d)
+Save=function(e)
 return{
-__type="Colorpicker",
-value=d.Value and d.Value:ToHex()or"#FFFFFF",
-transparency=d.Transparency or 0,
+__type=e.__type,
+value=e.Default:ToHex(),
+transparency=e.Transparency or nil,
 }
 end,
-Load=function(d,e)
-if d and d.Set then
-local f=Color3.fromHex(e.value or"#FFFFFF")
-d:Set(f,e.transparency or 0)
+Load=function(e,f)
+if e then
+e:Update(Color3.fromHex(f.value),f.transparency or nil)
 end
 end
 },
 Dropdown={
-Save=function(d)
+Save=function(e)
 return{
-__type="Dropdown",
-value=d.Value,
-multi=d.Multi or false,
+__type=e.__type,
+value=e.Value,
 }
 end,
-Load=function(d,e)
-if d and d.Set then
-d:Set(e.value)
+Load=function(e,f)
+if e then
+e:Select(f.value)
 end
 end
 },
 Input={
-Save=function(d)
+Save=function(e)
 return{
-__type="Input",
-value=d.Value or"",
+__type=e.__type,
+value=e.Value,
 }
 end,
-Load=function(d,e)
-if d and d.Set then
-d:Set(e.value or"")
+Load=function(e,f)
+if e then
+e:Set(f.value)
 end
 end
 },
 Keybind={
-Save=function(d)
+Save=function(e)
 return{
-__type="Keybind",
-value=d.Value,
+__type=e.__type,
+value=e.Value,
 }
 end,
-Load=function(d,e)
-if d and d.Set then
-d:Set(e.value)
+Load=function(e,f)
+if e then
+e:Set(f.value)
 end
 end
 },
 Slider={
-Save=function(d)
+Save=function(e)
 return{
-__type="Slider",
-value=d.Value or 0,
+__type=e.__type,
+value=e.Value.Default,
 }
 end,
-Load=function(d,e)
-if d and d.Set then
-d:Set(e.value or 0)
+Load=function(e,f)
+if e then
+e:Set(f.value)
 end
 end
 },
 Toggle={
-Save=function(d)
+Save=function(e)
 return{
-__type="Toggle",
-value=d.Value or false,
+__type=e.__type,
+value=e.Value,
 }
 end,
-Load=function(d,e)
-if d and d.Set then
-d:Set(e.value or false)
+Load=function(e,f)
+if e then
+e:Set(f.value)
 end
 end
 },
 }
 }
 
-function d.Init(e,f,g)
-if not g then
-warn"[ ConfigManager ] Folder name is not specified."
+function d.Init(e,f)
+if not f.Folder then
+warn"[ WindUI.ConfigManager ] Window.Folder is not specified."
+
 return false
 end
 
 d.Window=f
-d.Folder=g
-d.Path="WindUI/"..tostring(d.Folder).."/"
+d.Folder=f.Folder
+d.Path="WindUI/"..tostring(d.Folder).."/config/"
 
 
 pcall(function()
 makefolder"WindUI"
+makefolder("WindUI/"..tostring(d.Folder))
 makefolder(d.Path)
 end)
 
@@ -2006,7 +2006,7 @@ end
 
 local i
 local function refreshConfigsList()
-local j=d:GetAllConfigs()
+local j=d:AllConfigs()or{}
 if i then
 i:Refresh(j)
 end
@@ -2033,8 +2033,18 @@ Title="Save Config",
 Desc="Save current settings to config file",
 Callback=function()
 if f~=""then
-local j,k=d:SaveConfig(f)
+local j=d:CreateConfig(f)
 if j then
+
+for k,l in pairs(d.Elements)do
+j:Register(k,l)
+end
+
+local k,l=pcall(function()
+j:Save()
+end)
+
+if k then
 d.Window:Notify{
 Title="Config Saved",
 Content="Config '"..f.."' saved successfully!",
@@ -2044,7 +2054,14 @@ refreshConfigsList()
 else
 d.Window:Notify{
 Title="Save Error",
-Content=k or"Failed to save config",
+Content="Failed to save config: "..tostring(l),
+Duration=3,
+}
+end
+else
+d.Window:Notify{
+Title="Save Error",
+Content="Failed to create config",
 Duration=3,
 }
 end
@@ -2063,8 +2080,18 @@ Title="Load Config",
 Desc="Load settings from selected config file",
 Callback=function()
 if g~=""then
-local j,k=d:LoadConfig(g)
+local j=d:CreateConfig(g)
 if j then
+
+for k,l in pairs(d.Elements)do
+j:Register(k,l)
+end
+
+local k,l=pcall(function()
+j:Load()
+end)
+
+if k then
 d.Window:Notify{
 Title="Config Loaded",
 Content="Config '"..g.."' loaded successfully!",
@@ -2073,7 +2100,14 @@ Duration=3,
 else
 d.Window:Notify{
 Title="Load Error",
-Content=k or"Failed to load config",
+Content="Failed to load config: "..tostring(l),
+Duration=3,
+}
+end
+else
+d.Window:Notify{
+Title="Load Error",
+Content="Failed to create config instance",
 Duration=3,
 }
 end
@@ -2092,8 +2126,14 @@ Title="Delete Config",
 Desc="Delete selected config file",
 Callback=function()
 if g~=""then
-local j,k=d:DeleteConfig(g)
-if j then
+local j=d.Path..g..".json"
+
+if isfile(j)then
+local k,l=pcall(function()
+delfile(j)
+end)
+
+if k then
 d.Window:Notify{
 Title="Config Deleted",
 Content="Config '"..g.."' deleted successfully!",
@@ -2106,7 +2146,14 @@ refreshConfigsList()
 else
 d.Window:Notify{
 Title="Delete Error",
-Content=k or"Failed to delete config",
+Content="Failed to delete config: "..tostring(l),
+Duration=3,
+}
+end
+else
+d.Window:Notify{
+Title="Delete Error",
+Content="Config file not found",
 Duration=3,
 }
 end
@@ -2134,168 +2181,80 @@ end
 }
 end
 
-function d.Register(e,f,g,h)
+function d.Register(e,f,g)
 if not g then
 warn("[ ConfigManager ] Element is nil for:",f)
 return
 end
 
-d.Elements[f]={
-element=g,
-type=h or"Toggle"
-}
+d.Elements[f]=g
 end
 
-function d.SaveConfig(e,f)
-if not f or f==""then
-return false,"No config name specified"
-end
-
+function d.CreateConfig(e,f)
 local g={
-ConfigName=f,
-SavedAt=os.date"%Y-%m-%d %H:%M:%S",
+Path=d.Path..f..".json",
+
 Elements={}
 }
 
-for h,i in pairs(d.Elements)do
-local j=i.element
-local k=i.type
-
-if j and d.Parser[k]then
-local l,m=pcall(function()
-return d.Parser[k].Save(j)
-end)
-
-if l then
-g.Elements[h]=m
-else
-warn("[ ConfigManager ] Failed to save element:",h,m)
-end
-end
+if not f then
+return false,"No config file is selected"
 end
 
-local h=d.Path..f..".json"
-local i,j=pcall(function()
-writefile(h,b:JSONEncode(g))
-end)
+function g.Register(h,i,j)
+g.Elements[i]=j
+end
 
-if i then
-return true,"Config saved successfully"
-else
-return false,"Failed to save config: "..tostring(j)
+function g.Save(h)
+local i={
+Elements={}
+}
+
+for j,k in next,g.Elements do
+if d.Parser[k.__type]then
+i.Elements[tostring(j)]=d.Parser[k.__type].Save(k)
 end
 end
 
-function d.LoadConfig(e,f)
-if not f or f==""then
-return false,"No config name specified"
+print(b:JSONEncode(i))
+
+writefile(g.Path,b:JSONEncode(i))
 end
 
-local g=d.Path..f..".json"
+function g.Load(h)
+if not isfile(g.Path)then return false,"Invalid file"end
 
-if not isfile(g)then
-return false,"Config file not found"
-end
+local i=b:JSONDecode(readfile(g.Path))
 
-local h,i=pcall(function()
-return b:JSONDecode(readfile(g))
-end)
-
-if not h then
-return false,"Failed to decode config file"
-end
-
-if not i or not i.Elements then
-return false,"Invalid config file format"
-end
-
-local j=0
-for k,l in pairs(i.Elements)do
-if d.Elements[k]and d.Parser[l.__type]then
-local m=d.Elements[k].element
-
+for j,k in next,i.Elements do
+if g.Elements[j]and d.Parser[k.__type]then
 task.spawn(function()
-local n,o=pcall(function()
-d.Parser[l.__type].Load(m,l)
-end)
-
-if n then
-j=j+1
-else
-warn("[ ConfigManager ] Failed to load element:",k,o)
-end
+d.Parser[k.__type].Load(g.Elements[j],k)
 end)
 end
 end
 
-return true,"Config loaded successfully ("..j.." elements)"
 end
 
-function d.DeleteConfig(e,f)
-if not f or f==""then
-return false,"No config name specified"
+
+d.Configs[f]=g
+
+return g
 end
 
-local g=d.Path..f..".json"
-
-if not isfile(g)then
-return false,"Config file not found"
-end
-
-local h,i=pcall(function()
-delfile(g)
-end)
-
-if h then
-return true,"Config deleted successfully"
-else
-return false,"Failed to delete config: "..tostring(i)
-end
-end
-
-function d.GetAllConfigs(e)
+function d.AllConfigs(e)
+if listfiles then
 local f={}
-
-local g,h=pcall(function()
-return listfiles(d.Path)
-end)
-
-if g and h then
-for i,j in ipairs(h)do
-local k=j:match"([^/\\]+)%.json$"
-if k then
-table.insert(f,k)
-end
+for g,h in next,listfiles(d.Path)do
+local i=h:match"([^\\/]+)%.json$"
+if i then
+table.insert(f,i)
 end
 end
 
 return f
 end
-
-function d.GetConfigInfo(e,f)
-if not f or f==""then
-return nil
-end
-
-local g=d.Path..f..".json"
-
-if not isfile(g)then
-return nil
-end
-
-local h,i=pcall(function()
-return b:JSONDecode(readfile(g))
-end)
-
-if h and i then
-return{
-name=i.ConfigName or f,
-savedAt=i.SavedAt or"Unknown",
-elementCount=i.Elements and#i.Elements or 0
-}
-end
-
-return nil
+return false
 end
 
 return d end function a.l()
