@@ -298,21 +298,21 @@ function Element:New(Config)
                 ImageTransparency = 1, -- .95
                 Parent = Dropdown.UIElements.Menu.Frame.ScrollingFrame,
                 --Text = "",
-                ImageColor3 = Color3.new(1,1,1),
+                -- ImageColor3 = Color3.new(1,1,1),
                 
             }, {
                 Creator.NewRoundFrame(Element.MenuCorner - Element.MenuPadding, "SquircleOutline", {
                     Size = UDim2.new(1,0,1,0),
-                    -- ImageColor3 = Color3.new(1,1,1),
+                    ImageColor3 = Color3.new(1,1,1),
                     ImageTransparency = 1, -- .75
                     Name = "Highlight",
                 }, {
                     New("UIGradient", {
                         Rotation = 80,
                         Color = ColorSequence.new({
-                            -- ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-                            -- ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-                            -- ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
+                            ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                            ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
                         }),
                         Transparency = NumberSequence.new({
                             NumberSequenceKeypoint.new(0.0, 0.1),
