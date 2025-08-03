@@ -304,7 +304,7 @@ function Element:New(Config)
                 Creator.NewRoundFrame(Element.MenuCorner - Element.MenuPadding, "SquircleOutline", {
                     Size = UDim2.new(1,0,1,0),
                     ImageColor3 = Color3.new(1,1,1),
-                    ImageTransparency = 1, -- .75
+                    ImageTransparency = 0, -- .75
                     Name = "Highlight",
                 }, {
                     New("UIGradient", {

@@ -3705,7 +3705,7 @@ ImageColor3=Color3.new(1,1,1),
 h.NewRoundFrame(l.MenuCorner-l.MenuPadding,"SquircleOutline",{
 Size=UDim2.new(1,0,1,0),
 ImageColor3=Color3.new(1,1,1),
-ImageTransparency=1,
+ImageTransparency=0,
 Name="Highlight",
 },{
 i("UIGradient",{
