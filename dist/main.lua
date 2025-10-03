@@ -4819,12 +4819,41 @@ local ag={
 __type="Paragraph",
 Title=af.Title or"Paragraph",
 Desc=af.Desc or nil,
-
 Locked=af.Locked or false,
+_titleLabel=nil,
+_descLabel=nil,
 }
+
 local ah=a.load'y'(af)
 
 ag.ParagraphFrame=ah
+
+ag._titleLabel=ah.UIElements.Title
+ag._descLabel=ah.UIElements.Desc
+
+function ag.SetTitle(ai,aj)
+if ai._titleLabel and aj then
+ai.Title=aj
+ai._titleLabel.Text=aj
+end
+end
+
+function ag.SetDesc(ai,aj)
+if ai._descLabel and aj then
+ai.Desc=aj
+ai._descLabel.Text=aj
+end
+end
+
+function ag.UpdateText(ai,aj,ak)
+if aj then
+ai:SetTitle(aj)
+end
+if ak then
+ai:SetDesc(ak)
+end
+end
+
 if af.Buttons and#af.Buttons>0 then
 local ai=ab("Frame",{
 Size=UDim2.new(1,0,0,38),
@@ -4838,11 +4867,9 @@ FillDirection="Vertical",
 })
 })
 
-
 for aj,ak in next,af.Buttons do
 local al=ad(ak.Title,ak.Icon,ak.Callback,"White",ai)
 al.Size=UDim2.new(1,0,0,38)
-
 end
 end
 
@@ -4851,6 +4878,7 @@ return ag.__type,ag
 end
 
 return ac end function a.A()
+
 local aa=a.load'a'local ab=
 aa.New
 
