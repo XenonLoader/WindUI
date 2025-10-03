@@ -94,18 +94,18 @@ ConfigManager = {
 
 function ConfigManager:Init(WindowTable)
     if not WindowTable.Folder then
-        warn("[ WindUI.ConfigManager ] Window.Folder is not specified.")
+        warn("[ Avantrix.ConfigManager ] Window.Folder is not specified.")
         return false
     end
     
     Window = WindowTable
     ConfigManager.Folder = Window.Folder
-    ConfigManager.Path = "WindUI/" .. tostring(ConfigManager.Folder) .. "/config/"
+    ConfigManager.Path = "Avantrix/" .. tostring(ConfigManager.Folder) .. "/config/"
     
-    if not isfolder("WindUI/" .. ConfigManager.Folder) then
-        makefolder("WindUI/" .. ConfigManager.Folder)
-        if not isfolder("WindUI/" .. ConfigManager.Folder .. "/config/") then
-            makefolder("WindUI/" .. ConfigManager.Folder .. "/config/")
+    if not isfolder("Avantrix/" .. ConfigManager.Folder) then
+        makefolder("Avantrix/" .. ConfigManager.Folder)
+        if not isfolder("Avantrix/" .. ConfigManager.Folder .. "/config/") then
+            makefolder("Avantrix/" .. ConfigManager.Folder .. "/config/")
         end
     end
     
@@ -172,7 +172,7 @@ function ConfigManager:CreateConfig(configFilename)
         end
         
         local success, loadData = pcall(function()
-            local readfile = readfile or function() warn("[ WindUI.ConfigManager ] The config system doesn't work in the studio.") return nil end
+            local readfile = readfile or function() warn("[ Avantrix.ConfigManager ] The config system doesn't work in the studio.") return nil end
             return HttpService:JSONDecode(readfile(ConfigModule.Path))
         end)
         
