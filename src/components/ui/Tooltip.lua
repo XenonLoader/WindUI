@@ -18,6 +18,7 @@ function ToolTip.New(Title, Parent)
         FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
         Text = Title,
         TextSize = 17,
+        TextTransparency = 1,
         ThemeTag = {
             TextColor3 = "Text",
         }
@@ -27,12 +28,12 @@ function ToolTip.New(Title, Parent)
         Scale = .9 -- 1
     })
     
-    local Container = New("CanvasGroup", {
+    local Container = New("Frame", {
         AnchorPoint = Vector2.new(0.5,0),
         AutomaticSize = "XY",
         BackgroundTransparency = 1,
         Parent = Parent,
-        GroupTransparency = 1, -- 0
+        --GroupTransparency = 1, -- 0
         Visible = false -- true
     }, {
         New("UISizeConstraint", {
@@ -65,22 +66,23 @@ function ToolTip.New(Title, Parent)
                 }),
             }),
         }),
-        New("Frame", {
+        Creator.NewRoundFrame(14, "Squircle", {
             AutomaticSize = "XY",
             ThemeTag = {
-                BackgroundColor3 = "Accent",
+                ImageColor3 = "Accent",
             },
-            
+            ImageTransparency = 1,
+            Name = "Background",
         }, {
-            New("UICorner", {
-                CornerRadius = UDim.new(0,16),
-            }),
+            -- New("UICorner", {
+            --     CornerRadius = UDim.new(0,16),
+            -- }),
             New("Frame", {
                 ThemeTag = {
                     BackgroundColor3 = "Text",
                 },
                 AutomaticSize = "XY",
-                BackgroundTransparency = .9,
+                BackgroundTransparency = 1, -- not needed
             }, {
                 New("UICorner", {
                     CornerRadius = UDim.new(0,16),
@@ -113,15 +115,19 @@ function ToolTip.New(Title, Parent)
     function ToolTipModule:Open() 
         Container.Visible = true
         
-        Tween(Container, .16, { GroupTransparency = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        --Tween(Container, .16, { GroupTransparency = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        Tween(Container.Background, .2, { ImageTransparency = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        Tween(ToolTipTitle, .2, { TextTransparency = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
         Tween(UIScale, .18, { Scale = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
     end
     
     function ToolTipModule:Close() 
-        Tween(Container, .2, { GroupTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-        Tween(UIScale, .2, { Scale = .9 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        --Tween(Container, .2, { GroupTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        Tween(Container.Background, .3, { ImageTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        Tween(ToolTipTitle, .3, { TextTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        Tween(UIScale, .35, { Scale = .9 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
         
-        task.wait(.25)
+        task.wait(.35)
         
         Container.Visible = false
         Container:Destroy()
@@ -129,6 +135,7 @@ function ToolTip.New(Title, Parent)
     
     return ToolTipModule
 end
+
 
 
 return ToolTip

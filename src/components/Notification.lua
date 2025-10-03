@@ -5,9 +5,9 @@ local Tween = Creator.Tween
 local NotificationModule = {
     Size = UDim2.new(0,300,1,-100-56),
     SizeLower = UDim2.new(0,300,1,-56),
-    UICorner = 16,
+    UICorner = 13,
     UIPadding = 14,
-    ButtonPadding = 9,
+    --ButtonPadding = 9,
     Holder = nil,
     NotificationIndex = 0,
     Notifications = {}
@@ -67,17 +67,13 @@ function NotificationModule.New(Config)
     NotificationModule.NotificationIndex = NotificationModule.NotificationIndex + 1
     NotificationModule.Notifications[NotificationModule.NotificationIndex] = Notification
     
-    local UICorner = New("UICorner", {
-        CornerRadius = UDim.new(0,NotificationModule.UICorner),
-    })
-    
-    local UIStroke = New("UIStroke", {
-        ThemeTag = {
-            Color = "Text"
-        },
-        Transparency = 1, -- - .9
-        Thickness = .6,
-    })
+    -- local UIStroke = New("UIStroke", {
+    --     ThemeTag = {
+    --         Color = "Text"
+    --     },
+    --     Transparency = 1, -- - .9
+    --     Thickness = .6,
+    -- })
     
     local Icon
 
@@ -128,7 +124,8 @@ function NotificationModule.New(Config)
             AnchorPoint = Vector2.new(1,0),
             ThemeTag = {
                 ImageColor3 = "Text"
-            }
+            },
+            ImageTransparency = .4,
         }, {
             New("TextButton", {
                 Size = UDim2.new(1,8,1,8),
@@ -141,8 +138,8 @@ function NotificationModule.New(Config)
     end
     
     local Duration = New("Frame", {
-        Size = UDim2.new(1,0,0,3),
-        BackgroundTransparency = .9,
+        Size = UDim2.new(0,0,1,0),
+        BackgroundTransparency = .95,
         ThemeTag = {
             BackgroundColor3 = "Text",
         },
@@ -176,7 +173,7 @@ function NotificationModule.New(Config)
                 TextColor3 = "Text"
             },
             Text = Notification.Title,
-            FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold)
+            FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium)
         }),
         New("UIListLayout", {
             Padding = UDim.new(0,NotificationModule.UIPadding/3)
@@ -203,17 +200,27 @@ function NotificationModule.New(Config)
     end
     
     
-    local Main = New("CanvasGroup", {
+    local Main = Creator.NewRoundFrame(NotificationModule.UICorner, "Squircle", {
         Size = UDim2.new(1,0,0,0),
         Position = UDim2.new(2,0,1,0),
         AnchorPoint = Vector2.new(0,1),
         AutomaticSize = "Y",
-        BackgroundTransparency = .25,
+        ImageTransparency = .05,
         ThemeTag = {
-            BackgroundColor3 = "Accent"
+            ImageColor3 = "Background"
         },
         --ZIndex = 20
     }, {
+        New("CanvasGroup", {
+            Size = UDim2.new(1,0,1,0),
+            BackgroundTransparency = 1,
+        }, {
+            Duration,
+            New("UICorner", {
+                CornerRadius = UDim.new(0,NotificationModule.UICorner),
+            })
+    
+        }),
         New("ImageLabel", {
             Name = "Background",
             Image = Notification.Background,
@@ -222,13 +229,14 @@ function NotificationModule.New(Config)
             ScaleType = "Crop",
             ImageTransparency = Notification.BackgroundImageTransparency
             --ZIndex = 19,
+        }, {
+            New("UICorner", {
+                CornerRadius = UDim.new(0,NotificationModule.UICorner),
+            })
         }),
-    
-        UIStroke, UICorner,
+        
         TextContainer,
         Icon, CloseButton,
-        Duration,
-        --ButtonsContainer,
     })
 
     local MainContainer = New("Frame", {
@@ -259,7 +267,7 @@ function NotificationModule.New(Config)
         )}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
         Tween(Main, 0.45, {Position = UDim2.new(0,0,1,0)}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
         if Notification.Duration then
-            Tween(Duration, Notification.Duration, {Size = UDim2.new(0,0,0,3)}, Enum.EasingStyle.Linear,Enum.EasingDirection.InOut):Play()
+            Tween(Duration, Notification.Duration, {Size = UDim2.new(1,0,1,0)}, Enum.EasingStyle.Linear,Enum.EasingDirection.InOut):Play()
             task.wait(Notification.Duration)
             Notification:Close()
         end

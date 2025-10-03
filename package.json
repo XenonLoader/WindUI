@@ -1,35 +1,30 @@
 {
     "name": "windui",
-    "version": "1.6.31",
-    "main": "main.lua",
-    "repository": "https://github.com/Footagesus/TreeHUB",
-    "scripts": {
-        "dev": "darklua process main.lua dist/main.lua --config darklua.dev.config.json && lua build/init.lua",
-        "build": "darklua process src/init.lua dist/main.lua --config darklua.dev.config.json && lua build/init.lua",
-        "live": "python -m http.server 8642",
-        "watch": "chokidar . -i 'node_modules' -i 'dist' -c 'npm run dev'",
-        "live-build": "concurrently \"npm run live\" \"npm run watch\""
-    },
+    "version": "1.6.53",
+    "main": "./dist/main.lua",
+    "repository": "https://github.com/Footagesus/WindUI",
+    "discord": "https://discord.gg/ftgs-development-hub-1300692552005189632",
+    "author": "Footagesus",
+    "description": "Roblox UI Library for scripts",
+    "license": "MIT",
+"scripts": {
+  "dev": "sh build/build.sh dev",
+  "build": "sh build/build.sh build",
+  "live": "python -m http.server 8642",
+  "watch": "chokidar . -i 'node_modules' -i 'dist' -i 'build' -c 'npm run dev --'",
+  "live-build": "concurrently \"npm run live\" \"npm run watch --\"",
+  "updater": "python updater/main.py"
+}
+,
     "keywords": [
+        "ui-library",
+        "ui-design",
         "script",
         "script-hub",
-        "exploiting",
-        "UI",
-        "UX",
-        "Design"
+        "exploiting"
     ],
-    "author": "Footagesus",
-    "license": "MIT",
-    "description": "Roblox UI Library for exploits and scripts",
     "devDependencies": {
         "chokidar-cli": "^3.0.0",
         "concurrently": "^9.2.0"
-    },
-    "pnpm": {
-        "peerDependencyRules": {
-            "ignoreMissing": [
-                "@algolia/client-search"
-            ]
-        }
     }
 }

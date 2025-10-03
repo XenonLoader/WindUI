@@ -12,7 +12,9 @@ function PopupModule.new(PopupConfig)
         Icon = PopupConfig.Icon,
         IconThemed = PopupConfig.IconThemed,
         Thumbnail = PopupConfig.Thumbnail,
-        Buttons = PopupConfig.Buttons
+        Buttons = PopupConfig.Buttons,
+        
+        IconSize = 22,
     }
     
     local DialogInit = require("../window/Dialog").Init(nil, PopupConfig.WindUI.ScreenGui.Popups)
@@ -39,15 +41,16 @@ function PopupModule.new(PopupConfig)
             0,
             PopupConfig.WindUI.Window,
             "Popup",
+            true,
             PopupConfig.IconThemed
         )
-        IconFrame.Size = UDim2.new(0,22,0,22)
+        IconFrame.Size = UDim2.new(0,Popup.IconSize,0,Popup.IconSize)
         IconFrame.LayoutOrder = -1
     end
     
     
     local Title = New("TextLabel", {
-        AutomaticSize = "XY",
+        AutomaticSize = "Y",
         BackgroundTransparency = 1,
         Text = Popup.Title,
         TextXAlignment = "Left",
@@ -55,7 +58,9 @@ function PopupModule.new(PopupConfig)
         ThemeTag = {
             TextColor3 = "Text",
         },
-        TextSize = 20
+        TextSize = 20,
+        TextWrapped = true,
+        Size = UDim2.new(1, IconFrame and -Popup.IconSize-14 or 0,0,0)
     })
 
     local IconAndTitleContainer = New("Frame", {
@@ -97,7 +102,8 @@ function PopupModule.new(PopupConfig)
                 TextColor3 = "Text",
             },
             BackgroundTransparency = 1,
-            RichText = true
+            RichText = true,
+            TextWrapped = true,
         })
     end
 

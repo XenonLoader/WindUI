@@ -171,12 +171,19 @@ function Code.New(Code, Title, Parent, Callback, UIScale)
         CopyButton,
     })
     
+    CodeModule.CodeFrame = CodeFrame
+    
     Creator.AddSignal(TextLabel:GetPropertyChangedSignal("TextBounds"), function()
         ScrollingFrame.Size = UDim2.new(1,0,0,(TextLabel.TextBounds.Y/(UIScale or 1)) + ((CodeModule.Padding+3)*2))
     end)
     
     function CodeModule.Set(code)
         TextLabel.Text = Highlighter.run(code)
+    end
+    
+    function CodeModule.Destroy()
+        CodeFrame:Destroy()
+        CodeModule = nil
     end
     
     CodeModule.Set(Code)
@@ -188,6 +195,12 @@ function Code.New(Code, Title, Parent, Callback, UIScale)
             CopyButton.Button.ImageLabel.Image = CheckIcon[1]
             CopyButton.Button.ImageLabel.ImageRectSize = CheckIcon[2].ImageRectSize
             CopyButton.Button.ImageLabel.ImageRectOffset = CheckIcon[2].ImageRectPosition
+            
+            task.wait(1)
+            local CopyIcon = Creator.Icon("copy")
+            CopyButton.Button.ImageLabel.Image = CopyIcon[1]
+            CopyButton.Button.ImageLabel.ImageRectSize = CopyIcon[2].ImageRectSize
+            CopyButton.Button.ImageLabel.ImageRectOffset = CopyIcon[2].ImageRectPosition
         end
     end)
     return CodeModule

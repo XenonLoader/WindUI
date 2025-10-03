@@ -5,14 +5,16 @@ local Creator = require("../../modules/Creator")
 local New = Creator.New
 local Tween = Creator.Tween
 
-local CreateButton = require("../ui/Button").New
 local CreateToolTip = require("../ui/Tooltip").New
 local CreateScrollSlider = require("../ui/ScrollSlider").New
 
 
+
+local Window, WindUI, UIScale
+
 local TabModule = {
-    Window = nil,
-    WindUI = nil,
+    --Window = nil,
+    --WindUI = nil,
     Tabs = {}, 
     Containers = {},
     SelectedTab = nil,
@@ -23,15 +25,15 @@ local TabModule = {
     OnChangeFunc = function(v) end
 }
 
-function TabModule.Init(Window, WindUI, ToolTipParent, TabHighlight)
-    TabModule.Window = Window
-    TabModule.WindUI = WindUI
+function TabModule.Init(WindowTable, WindUITable, ToolTipParent, TabHighlight)
+    Window = WindowTable
+    WindUI = WindUITable
     TabModule.ToolTipParent = ToolTipParent
     TabModule.TabHighlight = TabHighlight
     return TabModule
 end
 
-function TabModule.New(Config)
+function TabModule.New(Config, UIScale)
     local Tab = {
         __type = "Tab",
         Title = Config.Title or "Tab",
@@ -46,13 +48,13 @@ function TabModule.New(Config)
         UIElements = {},
         Elements = {},
         ContainerFrame = nil,
-        UICorner = TabModule.Window.UICorner-(TabModule.Window.UIPadding/2),
+        UICorner = Window.UICorner-(Window.UIPadding/2),
+        
+        Gap = Window.NewElements and 1 or 6,
     }
     
-    local Window = TabModule.Window
-    local WindUI = TabModule.WindUI
-    
     TabModule.TabCount = TabModule.TabCount + 1
+    
 	local TabIndex = TabModule.TabCount
 	Tab.Index = TabIndex
 	
@@ -137,7 +139,7 @@ function TabModule.New(Config)
             Tab.Icon,
             Tab.Icon .. ":" .. Tab.Title,
             0,
-            TabModule.Window.Folder,
+            Window.Folder,
             Tab.__type,
             true,
             Tab.IconThemed
@@ -155,7 +157,7 @@ function TabModule.New(Config)
             Tab.Icon,
             Tab.Icon .. ":" .. Tab.Title,
             0,
-            TabModule.Window.Folder,
+            Window.Folder,
             Tab.__type,
             true,
             Tab.IconThemed
@@ -182,14 +184,14 @@ function TabModule.New(Config)
         ScrollingDirection = "Y",
     }, {
         New("UIPadding", {
-            PaddingTop = UDim.new(0,20),
-            PaddingLeft = UDim.new(0,20),
-            PaddingRight = UDim.new(0,20),
-            PaddingBottom = UDim.new(0,20),
+            PaddingTop = UDim.new(0,not Window.HidePanelBackground and 20 or 10),
+            PaddingLeft = UDim.new(0,not Window.HidePanelBackground and 20 or 10),
+            PaddingRight = UDim.new(0,not Window.HidePanelBackground and 20 or 10),
+            PaddingBottom = UDim.new(0,not Window.HidePanelBackground and 20 or 10),
         }),
         New("UIListLayout", {
             SortOrder = "LayoutOrder",
-            Padding = UDim.new(0,6),
+            Padding = UDim.new(0,Tab.Gap),
             HorizontalAlignment = "Center",
         })
     })
@@ -263,7 +265,9 @@ function TabModule.New(Config)
 	    end
 	end)
 	
-    CreateScrollSlider(Tab.UIElements.ContainerFrame, Tab.UIElements.ContainerFrameCanvas, Window, 3)
+	if Window.ScrollBarEnabled then
+        CreateScrollSlider(Tab.UIElements.ContainerFrame, Tab.UIElements.ContainerFrameCanvas, Window, 3)
+	end
 
 	local ToolTip
     local hoverTimer
@@ -324,127 +328,87 @@ function TabModule.New(Config)
         end
     end)
     
-	-- WTF
-	
-    local Elements = {
-        Button      = require("../../elements/Button"),
-        Toggle      = require("../../elements/Toggle"),
-        Slider      = require("../../elements/Slider"),
-        Keybind     = require("../../elements/Keybind"),
-        Input       = require("../../elements/Input"),
-        Dropdown    = require("../../elements/Dropdown"),
-        Code        = require("../../elements/Code"),
-        Colorpicker = require("../../elements/Colorpicker"),
-        Section     = require("../../elements/Section"),
-    }
     
-    function Tab:Divider()
-        local Divider = New("Frame", {
-            Size = UDim2.new(1,0,0,1),
-            Position = UDim2.new(0.5,0,0.5,0),
-            AnchorPoint = Vector2.new(0.5,0.5),
-            BackgroundTransparency = .9,
-            ThemeTag = {
-                BackgroundColor3 = "Text"
-            }
-        })
-        local MainDivider = New("Frame", {
-            Parent = Tab.UIElements.ContainerFrame,
-            Size = UDim2.new(1,-7,0,5),
-            BackgroundTransparency = 1,
-        }, {
-            Divider
-        })
+    
+    function Tab:ScrollToTheElement(elemindex)
+        Tab.UIElements.ContainerFrame.ScrollingEnabled = false
+        Tween(Tab.UIElements.ContainerFrame, .45, 
+            { 
+                CanvasPosition = Vector2.new(
+                    0, -- X
+                    
+                    Tab.Elements[elemindex].ElementFrame.AbsolutePosition.Y 
+                    - Tab.UIElements.ContainerFrame.AbsolutePosition.Y  
+                    - Tab.UIElements.ContainerFrame.UIPadding.PaddingTop.Offset -- Y
+                ) 
+            }, 
+            Enum.EasingStyle.Quint, Enum.EasingDirection.Out
+        ):Play()
         
-        return MainDivider
-    end
-    
-    function Tab:Paragraph(ElementConfig)  
-        ElementConfig.Parent = Tab.UIElements.ContainerFrame  
-        ElementConfig.Window = Window  
-        ElementConfig.Hover = false  
-        --ElementConfig.Color = ElementConfig.Color  
-        ElementConfig.TextOffset = 0  
-        ElementConfig.IsButtons = ElementConfig.Buttons and #ElementConfig.Buttons > 0 and true or false  
-          
-        local ParagraphModule = {  
-            __type = "Paragraph",  
-            Title = ElementConfig.Title or "Paragraph",  
-            Desc = ElementConfig.Desc or nil,  
-            --Color = ElementConfig.Color,  
-            Locked = ElementConfig.Locked or false,  
-        }  
-        local Paragraph = require("./Element")(ElementConfig)  
-          
-        ParagraphModule.ParagraphFrame = Paragraph  
-        if ElementConfig.Buttons and #ElementConfig.Buttons > 0 then  
-            local ButtonsContainer = New("Frame", {  
-                Size = UDim2.new(1,0,0,38),  
-                BackgroundTransparency = 1,  
-                AutomaticSize = "Y",
-                Parent = Paragraph.UIElements.Container
-            }, {  
-                New("UIListLayout", {  
-                    Padding = UDim.new(0,10),  
-                    FillDirection = "Vertical",  
-                })  
-            })  
-              
-  
-            for _,Button in next, ElementConfig.Buttons do  
-                local ButtonFrame = CreateButton(Button.Title, Button.Icon, Button.Callback, "White", ButtonsContainer)  
-                ButtonFrame.Size = UDim2.new(1,0,0,38)  
-                --ButtonFrame.AutomaticSize = "X"  
-            end
-        end  
-          
-        function ParagraphModule:SetTitle(Title)  
-            ParagraphModule.ParagraphFrame:SetTitle(Title)  
-        end  
-        function ParagraphModule:SetDesc(Title)  
-            ParagraphModule.ParagraphFrame:SetDesc(Title)  
-        end  
-        function ParagraphModule:Destroy()  
-            ParagraphModule.ParagraphFrame:Destroy()  
-        end  
-          
-        table.insert(Tab.Elements, ParagraphModule)  
-        return ParagraphModule  
-    end  
-    
-    for name, module in pairs(Elements) do
-        Tab[name] = function(self, config)
-            config.Parent = self.UIElements.ContainerFrame
-            config.Window = Window
-            config.WindUI = WindUI
-    
-            local elementInstance, content = module:New(config)
-            table.insert(self.Elements, content)
-    
-            local frame
-            for key, value in pairs(content) do
-                if typeof(value) == "table" and key:match("Frame$") then
-                    frame = value
-                    break
-                end
-            end
+        task.spawn(function()
+            task.wait(.48)
             
-            if frame then
-                function content:SetTitle(title)
-                    frame:SetTitle(title)
-                end
-                function content:SetDesc(desc)
-                    frame:SetDesc(desc)
-                end
-                function content:Destroy()
-                    frame:Destroy()
-                end
+            if Tab.Elements[elemindex].Highlight then
+                Tab.Elements[elemindex]:Highlight()
+                Tab.UIElements.ContainerFrame.ScrollingEnabled = true
             end
-            return content
+        end)
+        
+        return Tab
+    end
+	
+    
+    
+	-- yo
+	
+    Tab.ElementsModule = require("../../elements/Init")
+    
+    Tab.ElementsModule.Load(Tab, Tab.UIElements.ContainerFrame, Tab.ElementsModule.Elements, Window, WindUI, nil, Tab.ElementsModule, UIScale)
+    
+    
+    
+    function Tab:LockAll()
+        --print("LockAll called, number of elements: " .. #self.Elements)
+        for _, element in next, Window.AllElements do
+            if element.Tab and element.Tab.Index and element.Tab.Index == Tab.Index and element.Lock then 
+                element:Lock()
+            end
         end
     end
-
-	
+    function Tab:UnlockAll()
+        for _, element in next, Window.AllElements do
+            if element.Tab and element.Tab.Index and element.Tab.Index == Tab.Index and element.Unlock then
+                element:Unlock()
+            end
+        end
+    end
+    function Tab:GetLocked()
+        local LockedElements = {}
+        
+        for _, element in next, Window.AllElements do
+            if element.Tab and element.Tab.Index and element.Tab.Index == Tab.Index and element.Locked == true then 
+                table.insert(LockedElements, element)
+            end
+        end
+        
+        return LockedElements
+    end
+    function Tab:GetUnlocked()
+        local UnlockedElements = {}
+        
+        for _, element in next, Window.AllElements do
+            if element.Tab and element.Tab.Index and element.Tab.Index == Tab.Index and element.Locked == false then 
+                table.insert(UnlockedElements, element)
+            end
+        end
+        
+        return UnlockedElements
+    end
+    
+    function Tab:Select()
+        return TabModule:SelectTab(Tab.Index)
+    end
+    
 	task.spawn(function()
         local Empty = New("Frame", {
             BackgroundTransparency = 1,
@@ -486,8 +450,10 @@ function TabModule.New(Config)
         --     Empty.TextLabel.Size = UDim2.new(0,Empty.TextLabel.TextBounds.X,0,Empty.TextLabel.TextBounds.Y)
         -- end)
         
-        Creator.AddSignal(Tab.UIElements.ContainerFrame.ChildAdded, function()
+        local CreationConn
+        CreationConn = Creator.AddSignal(Tab.UIElements.ContainerFrame.ChildAdded, function()
             Empty.Visible = false
+            CreationConn:Disconnect()
         end)
 	end)
 	

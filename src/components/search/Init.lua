@@ -13,9 +13,9 @@ local Tween = Creator.Tween
 
 function SearchBar.new(TabModule, Parent, OnClose)
     local SearchBarModule = {
-        IconSize = 14,
+        IconSize = 18,
         Padding = 14,
-        Radius = 18,
+        Radius = 22,
         Width = 400,
         MaxHeight = 380,
         
@@ -42,7 +42,7 @@ function SearchBar.new(TabModule, Parent, OnClose)
         BackgroundTransparency = 1,
         TextXAlignment = "Left",
         FontFace = Font.new(Creator.Font, Enum.FontWeight.Regular),
-        TextSize = 17,
+        TextSize = 18,
     })
     
     local CloseButton = New("ImageLabel", {
@@ -51,9 +51,9 @@ function SearchBar.new(TabModule, Parent, OnClose)
         ImageRectOffset = Creator.Icon("x")[2].ImageRectPosition,
         BackgroundTransparency = 1,
         ThemeTag = {
-            ImageColor3 = "Text",
+            ImageColor3 = "Icon",
         },
-        ImageTransparency = .2,
+        ImageTransparency = .1,
         Size = UDim2.new(0,SearchBarModule.IconSize,0,SearchBarModule.IconSize)
     }, {
         New("TextButton", {
@@ -92,15 +92,18 @@ function SearchBar.new(TabModule, Parent, OnClose)
     local SearchFrame = Creator.NewRoundFrame(SearchBarModule.Radius, "Squircle", {
         Size = UDim2.new(1,0,1,0),
         ThemeTag = {
-            ImageColor3 = "Accent",
+            ImageColor3 = "Background",
         },
         ImageTransparency = 0,
     }, {
-        New("Frame", {
+        Creator.NewRoundFrame(SearchBarModule.Radius, "Squircle", {
             Size = UDim2.new(1,0,1,0),
             BackgroundTransparency = 1,
             --AutomaticSize = "Y",
             Visible = false,
+            ImageColor3 = Color3.new(1,1,1),
+            ImageTransparency = .98,
+            Name = "Frame",
         }, {
             New("Frame", { -- topbar search
                 Size = UDim2.new(1,0,0,46),
@@ -126,7 +129,7 @@ function SearchBar.new(TabModule, Parent, OnClose)
                         ThemeTag = {
                             ImageColor3 = "Icon",
                         },
-                        ImageTransparency = .05,
+                        ImageTransparency = .1,
                         Size = UDim2.new(0,SearchBarModule.IconSize,0,SearchBarModule.IconSize)
                     }),
                     TextBox,
@@ -188,7 +191,7 @@ function SearchBar.new(TabModule, Parent, OnClose)
             ThemeTag = {
                 ImageColor3 = "Outline",
             },
-            ImageTransparency = .7,
+            ImageTransparency = 1, -- .7
         }, {
             New("UIGradient", {
                 Rotation = 45,
@@ -208,7 +211,7 @@ function SearchBar.new(TabModule, Parent, OnClose)
             BackgroundTransparency = 1,
             Parent = Parent or nil
         }, {
-            Creator.NewRoundFrame(SearchBarModule.Radius-4, "Squircle", {
+            Creator.NewRoundFrame(SearchBarModule.Radius-11, "Squircle", {
                 Size = UDim2.new(1,0,0,0),
                 Position = UDim2.new(0.5,0,0.5,0),
                 AnchorPoint = Vector2.new(0.5,0.5),
@@ -219,66 +222,85 @@ function SearchBar.new(TabModule, Parent, OnClose)
                 ImageTransparency = 1, -- .95
                 Name = "Main"
             }, {
-                New("UIPadding", {
-                    PaddingTop = UDim.new(0,SearchBarModule.Padding-2),
-                    PaddingLeft = UDim.new(0,SearchBarModule.Padding),
-                    PaddingRight = UDim.new(0,SearchBarModule.Padding),
-                    PaddingBottom = UDim.new(0,SearchBarModule.Padding-2),
-                }),
-                New("ImageLabel", {
-                    Image = Creator.Icon(Icon)[1],
-                    ImageRectSize = Creator.Icon(Icon)[2].ImageRectSize,
-                    ImageRectOffset = Creator.Icon(Icon)[2].ImageRectPosition,
-                    BackgroundTransparency = 1,
+                Creator.NewRoundFrame(SearchBarModule.Radius-11, "SquircleOutline2", {
+                    Size = UDim2.new(1,0,1,0),
+                    Position = UDim2.new(0.5,0,0.5,0),
+                    AnchorPoint = Vector2.new(0.5,0.5),
                     ThemeTag = {
-                        ImageColor3 = "Text",
+                        ImageColor3 = "Outline",
                     },
-                    ImageTransparency = .2,
-                    Size = UDim2.new(0,SearchBarModule.IconSize,0,SearchBarModule.IconSize)
-                }),
-                New("Frame", {
-                    Size = UDim2.new(1,-SearchBarModule.IconSize-SearchBarModule.Padding,0,0),
-                    BackgroundTransparency = 1,
+                    ImageTransparency = 1, -- .7
+                    Name = "Outline",
                 }, {
-                    New("TextLabel", {
-                        Text = Title,
-                        ThemeTag = {
-                            TextColor3 = "Text",
-                        },
-                        TextSize = 17,
-                        BackgroundTransparency = 1,
-                        TextXAlignment = "Left",
-                        FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
-                        Size = UDim2.new(1,0,0,0),
-                        TextTruncate = "AtEnd",
-                        AutomaticSize = "Y",
-                        Name = "Title"
+                    New("UIGradient", {
+                        Rotation = 65,
+                        Transparency = NumberSequence.new({
+                            NumberSequenceKeypoint.new(0, 0.55),
+                            NumberSequenceKeypoint.new(0.5, 0.8),
+                            NumberSequenceKeypoint.new(1, 0.6)
+                        })
                     }),
-                    New("TextLabel", {
-                        Text = Desc or "",
-                        Visible = Desc and true or false,
-                        ThemeTag = {
-                            TextColor3 = "Text",
-                        },
-                        TextSize = 15,
-                        TextTransparency = .2,
+                    New("UIPadding", {
+                        PaddingTop = UDim.new(0,SearchBarModule.Padding-2),
+                        PaddingLeft = UDim.new(0,SearchBarModule.Padding),
+                        PaddingRight = UDim.new(0,SearchBarModule.Padding),
+                        PaddingBottom = UDim.new(0,SearchBarModule.Padding-2),
+                    }),
+                    New("ImageLabel", {
+                        Image = Creator.Icon(Icon)[1],
+                        ImageRectSize = Creator.Icon(Icon)[2].ImageRectSize,
+                        ImageRectOffset = Creator.Icon(Icon)[2].ImageRectPosition,
                         BackgroundTransparency = 1,
-                        TextXAlignment = "Left",
-                        FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
-                        Size = UDim2.new(1,0,0,0),
-                        TextTruncate = "AtEnd",
-                        AutomaticSize = "Y",
-                        Name = "Desc"
-                    }) or nil,
+                        ThemeTag = {
+                            ImageColor3 = "Icon",
+                        },
+                        ImageTransparency = .1,
+                        Size = UDim2.new(0,SearchBarModule.IconSize,0,SearchBarModule.IconSize)
+                    }),
+                    New("Frame", {
+                        Size = UDim2.new(1,-SearchBarModule.IconSize-SearchBarModule.Padding,0,0),
+                        BackgroundTransparency = 1,
+                    }, {
+                        New("TextLabel", {
+                            Text = Title,
+                            ThemeTag = {
+                                TextColor3 = "Text",
+                            },
+                            TextSize = 17,
+                            BackgroundTransparency = 1,
+                            TextXAlignment = "Left",
+                            FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
+                            Size = UDim2.new(1,0,0,0),
+                            TextTruncate = "AtEnd",
+                            AutomaticSize = "Y",
+                            Name = "Title"
+                        }),
+                        New("TextLabel", {
+                            Text = Desc or "",
+                            Visible = Desc and true or false,
+                            ThemeTag = {
+                                TextColor3 = "Text",
+                            },
+                            TextSize = 15,
+                            TextTransparency = .3,
+                            BackgroundTransparency = 1,
+                            TextXAlignment = "Left",
+                            FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
+                            Size = UDim2.new(1,0,0,0),
+                            TextTruncate = "AtEnd",
+                            AutomaticSize = "Y",
+                            Name = "Desc"
+                        }) or nil,
+                        New("UIListLayout", {
+                            Padding = UDim.new(0,6),
+                            FillDirection = "Vertical",
+                        })
+                    }),
                     New("UIListLayout", {
-                        Padding = UDim.new(0,6),
-                        FillDirection = "Vertical",
+                        Padding = UDim.new(0,SearchBarModule.Padding),
+                        FillDirection = "Horizontal",
                     })
                 }),
-                New("UIListLayout", {
-                    Padding = UDim.new(0,SearchBarModule.Padding),
-                    FillDirection = "Horizontal",
-                })
             }, true),
             New("Frame", {
                 Name = "ParentContainer",
@@ -320,15 +342,17 @@ function SearchBar.new(TabModule, Parent, OnClose)
             1,
             0,
             0,
-            Tab.Main.Frame.Desc.Visible and (((SearchBarModule.Padding-2)*2) + Tab.Main.Frame.Title.TextBounds.Y + 6 + Tab.Main.Frame.Desc.TextBounds.Y)
-            or (((SearchBarModule.Padding-2)*2) + Tab.Main.Frame.Title.TextBounds.Y)
+            Tab.Main.Outline.Frame.Desc.Visible and (((SearchBarModule.Padding-2)*2) + Tab.Main.Outline.Frame.Title.TextBounds.Y + 6 + Tab.Main.Outline.Frame.Desc.TextBounds.Y)
+            or (((SearchBarModule.Padding-2)*2) + Tab.Main.Outline.Frame.Title.TextBounds.Y)
         )
 
         Creator.AddSignal(Tab.Main.MouseEnter, function()
             Tween(Tab.Main, .04, {ImageTransparency = .95}):Play()
+            Tween(Tab.Main.Outline, .04, {ImageTransparency = .7}):Play()
         end)
         Creator.AddSignal(Tab.Main.InputEnded, function()
             Tween(Tab.Main, .08, {ImageTransparency = 1}):Play()
+            Tween(Tab.Main.Outline, .08, {ImageTransparency = 1}):Play()
         end)
         Creator.AddSignal(Tab.Main.MouseButton1Click, function()
             if Callback then
@@ -374,7 +398,8 @@ function SearchBar.new(TabModule, Parent, OnClose)
                             Title = elem.Title,
                             Desc = elem.Desc,
                             Original = elem,
-                            __type = elem.__type
+                            __type = elem.__type,
+                            Index = elemindex,
                         }
                     end
                 end
@@ -418,6 +443,10 @@ function SearchBar.new(TabModule, Parent, OnClose)
                         CreateSearchTab(e.Title, e.Desc, ElementIcon, TabMainElement:FindFirstChild("ParentContainer") and TabMainElement.ParentContainer.Frame or nil, false, function()
                             SearchBarModule:Close()
                             TabModule:SelectTab(tabindex) 
+                            if i.Tab.ScrollToTheElement then
+                                --print("uooo")
+                                i.Tab:ScrollToTheElement(e.Index)
+                            end
                             --
                         end)
                         --task.wait(0)

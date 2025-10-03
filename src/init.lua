@@ -2,34 +2,50 @@ local WindUI = {
     Window = nil,
     Theme = nil,
     Creator = require("./modules/Creator"),
-    Themes = require("./themes/init"),
+    LocalizationModule = require("./modules/Localization"),
+    NotificationModule = require("./components/Notification"),
+    Themes = nil,
     Transparent = false,
     
     TransparencyValue = .15,
     
     UIScale = 1,
     
-    ConfigManager = nil
+    --ConfigManager = nil,
+    Version = "0.0.0",
+    
+    Services = require("./utils/services/Init"),
+    
+    OnThemeChangeFunction = nil,
 }
 
 
+local HttpService = game:GetService("HttpService")
+
+
+local Package = HttpService:JSONDecode(require("../build/package"))
+if Package then
+    WindUI.Version = Package.version
+end
+
 local KeySystem = require("./components/KeySystem")
 
-local Themes = WindUI.Themes
+local ServicesModule = WindUI.Services
+
 local Creator = WindUI.Creator
 
 local New = Creator.New
 local Tween = Creator.Tween
 
-Creator.Themes = Themes
+
+local Acrylic = require("./utils/Acrylic/Init")
 
 local LocalPlayer = game:GetService("Players") and game:GetService("Players").LocalPlayer or nil
-WindUI.Themes = Themes
 
 local ProtectGui = protectgui or (syn and syn.protect_gui) or function() end
 
-local GUIParent = gethui and gethui() or game.CoreGui
---local GUIParent = game.CoreGui
+local GUIParent = gethui and gethui() or (game.CoreGui or game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+
 
 WindUI.ScreenGui = New("ScreenGui", {
     Name = "WindUI",
@@ -76,16 +92,15 @@ ProtectGui(WindUI.DropdownGui)
 
 Creator.Init(WindUI)
 
-math.clamp(WindUI.TransparencyValue, 0, 0.4)
+math.clamp(WindUI.TransparencyValue, 0, 1)
 
-local Notify = require("./components/Notification")
-local Holder = Notify.Init(WindUI.NotificationGui)
+local Holder = WindUI.NotificationModule.Init(WindUI.NotificationGui)
 
 function WindUI:Notify(Config)
     Config.Holder = Holder.Frame
     Config.Window = WindUI.Window
-    Config.WindUI = WindUI
-    return Notify.New(Config)
+    --Config.WindUI = WindUI
+    return WindUI.NotificationModule.New(Config)
 end
 
 function WindUI:SetNotificationLower(Val)
@@ -96,26 +111,32 @@ function WindUI:SetFont(FontId)
     Creator.UpdateFont(FontId)
 end
 
+function WindUI:OnThemeChange(func)
+    WindUI.OnThemeChangeFunction = func
+end
+
 function WindUI:AddTheme(LTheme)
-    Themes[LTheme.Name] = LTheme
+    WindUI.Themes[LTheme.Name] = LTheme
     return LTheme
 end
 
 function WindUI:SetTheme(Value)
-    if Themes[Value] then
-        WindUI.Theme = Themes[Value]
-        Creator.SetTheme(Themes[Value])
-        Creator.UpdateTheme()
+    if WindUI.Themes[Value] then
+        WindUI.Theme = WindUI.Themes[Value]
+        Creator.SetTheme(WindUI.Themes[Value])
         
-        return Themes[Value]
+        if WindUI.OnThemeChangeFunction then
+            WindUI.OnThemeChangeFunction(Value)
+        end
+        --Creator.UpdateTheme()
+        
+        return WindUI.Themes[Value]
     end
     return nil
 end
 
-WindUI:SetTheme("Dark")
-
 function WindUI:GetThemes()
-    return Themes
+    return WindUI.Themes
 end
 function WindUI:GetCurrentTheme()
     return WindUI.Theme.Name
@@ -126,12 +147,81 @@ end
 function WindUI:GetWindowSize()
     return Window.UIElements.Main.Size
 end
+function WindUI:Localization(LocalizationConfig)
+    return WindUI.LocalizationModule:New(LocalizationConfig, Creator)
+end
+
+function WindUI:SetLanguage(Value)
+    if Creator.Localization then
+        return Creator.SetLanguage(Value)
+    end
+    return false
+end
+
+function WindUI:ToggleAcrylic(Value)
+	if WindUI.Window and WindUI.Window.AcrylicPaint and WindUI.Window.AcrylicPaint.Model then
+		WindUI.Window.Acrylic = Value
+		WindUI.Window.AcrylicPaint.Model.Transparency = Value and 0.98 or 1
+		if Value then
+			Acrylic.Enable()
+		else
+			Acrylic.Disable()
+		end
+	end
+end
+
+
+
+function WindUI:Gradient(stops, props)
+    local colorSequence = {}
+    local transparencySequence = {}
+
+    for posStr, stop in next, stops do
+        local position = tonumber(posStr)
+        if position then
+            position = math.clamp(position / 100, 0, 1)
+            table.insert(colorSequence, ColorSequenceKeypoint.new(position, stop.Color))
+            table.insert(transparencySequence, NumberSequenceKeypoint.new(position, stop.Transparency or 0))
+        end
+    end
+
+    table.sort(colorSequence, function(a, b) return a.Time < b.Time end)
+    table.sort(transparencySequence, function(a, b) return a.Time < b.Time end)
+
+
+    if #colorSequence < 2 then
+        error("ColorSequence requires at least 2 keypoints")
+    end
+
+
+    local gradientData = {
+        Color = ColorSequence.new(colorSequence),
+        Transparency = NumberSequence.new(transparencySequence),
+    }
+
+    if props then
+        for k, v in pairs(props) do
+            gradientData[k] = v
+        end
+    end
+
+    return gradientData
+end
 
 
 function WindUI:Popup(PopupConfig)
     PopupConfig.WindUI = WindUI
     return require("./components/popup/Init").new(PopupConfig)
 end
+
+
+WindUI.Themes = require("./themes/init")(WindUI)
+
+Creator.Themes = WindUI.Themes
+
+
+WindUI:SetTheme("Dark")
+WindUI:SetLanguage(Creator.Language)
 
 
 function WindUI:CreateWindow(Config)
@@ -156,41 +246,82 @@ function WindUI:CreateWindow(Config)
     
     local CanLoadWindow = true
     
-    local Theme = Themes[Config.Theme or "Dark"]
+    local Theme = WindUI.Themes[Config.Theme or "Dark"]
     
-    WindUI.Theme = Theme
-    
+    --WindUI.Theme = Theme
     Creator.SetTheme(Theme)
     
-    local Filename = LocalPlayer.Name or "Unknown"
+    
+    local hwid = gethwid or function()
+        return game:GetService("Players").LocalPlayer.UserId
+    end
+    
+    local Filename = hwid()
     
     if Config.KeySystem then
         CanLoadWindow = false
-        if Config.KeySystem.SaveKey and Config.Folder then
-            if isfile(Config.Folder .. "/" .. Filename .. ".key") then
-                local isKey
-                if type(Config.KeySystem.Key) == "table" then
-                    isKey = table.find(Config.KeySystem.Key, readfile(Config.Folder .. "/" .. Filename .. ".key" ))
-                else
-                    isKey = tostring(Config.KeySystem.Key) == tostring(readfile(Config.Folder .. "/" .. Filename .. ".key" ))
-                end
+    
+        local function loadKeysystem()
+            KeySystem.new(Config, Filename, function(c) CanLoadWindow = c end)
+        end
+    
+        local keyPath = Config.Folder .. "/" .. Filename .. ".key"
+    
+        if not Config.KeySystem.API then
+            if Config.KeySystem.SaveKey and isfile(keyPath) then
+                local savedKey = readfile(keyPath)
+                local isKey = (type(Config.KeySystem.Key) == "table")
+                    and table.find(Config.KeySystem.Key, savedKey)
+                    or tostring(Config.KeySystem.Key) == tostring(savedKey)
+    
                 if isKey then
                     CanLoadWindow = true
+                else
+                    loadKeysystem()
                 end
             else
-                KeySystem.new(Config, Filename, function(c) CanLoadWindow=c end)
+                loadKeysystem()
             end
         else
-            KeySystem.new(Config, Filename, function(c) CanLoadWindow=c end)
-        end
-		repeat task.wait() until CanLoadWindow
-    end
+            if isfile(keyPath) then
+                local fileKey = readfile(keyPath)
+                local isSuccess = false
     
+                for _, i in next, Config.KeySystem.API do
+                    local serviceData = WindUI.Services[i.Type]
+                    if serviceData then
+                        local args = {}
+                        for _, argName in next, serviceData.Args do
+                            table.insert(args, i[argName])
+                        end
+    
+                        local service = serviceData.New(table.unpack(args))
+                        local success = service.Verify(fileKey)
+                        if success then
+                            isSuccess = true
+                            break
+                        end
+                    end
+                end
+    
+                CanLoadWindow = isSuccess
+                if not isSuccess then loadKeysystem() end
+            else
+                loadKeysystem()
+            end
+        end
+    
+        repeat task.wait() until CanLoadWindow
+    end
+
     local Window = CreateWindow(Config)
 
     WindUI.Transparent = Config.Transparent
     WindUI.Window = Window
     
+    if Config.Acrylic then
+        Acrylic.init()
+    end
     
     -- function Window:ToggleTransparency(Value)
     --     WindUI.Transparent = Value

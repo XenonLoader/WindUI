@@ -17,6 +17,10 @@ function Element:New(Config)
         Callback = Config.Callback or function() end,
         UIElements = {},
         IsFocusing = false,
+        
+        Width = 130,
+        TextBoxWidth = 30,
+        ThumbSize = 13,
     }
     local isTouch
     local moveconnection
@@ -49,13 +53,17 @@ function Element:New(Config)
         Title = Slider.Title,
         Desc = Slider.Desc,
         Parent = Config.Parent,
-        TextOffset = 0,
+        TextOffset = Slider.Width,
         Hover = false,
+        Tab = Config.Tab,
+        Index = Config.Index,
+        Window = Config.Window,
+        ElementTable = Slider,
     })
     
     Slider.UIElements.SliderIcon = Creator.NewRoundFrame(99, "Squircle", {
         ImageTransparency = .95,
-        Size = UDim2.new(1, -60-8, 0, 4),
+        Size = UDim2.new(1, -Slider.TextBoxWidth-8, 0, 4),
         Name = "Frame",
         ThemeTag = {
             ImageColor3 = "Text",
@@ -70,22 +78,24 @@ function Element:New(Config)
             },
         }, {
             Creator.NewRoundFrame(99, "Squircle", {
-                Size = UDim2.new(0, 13, 0, 13),
+                Size = UDim2.new(0, Slider.ThumbSize, 0, Slider.ThumbSize),
                 Position = UDim2.new(1, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 ThemeTag = {
                     ImageColor3 = "Text",
                 },
+                Name = "Thumb",
             })
         })
     })
     
     Slider.UIElements.SliderContainer = New("Frame", {
-        Size = UDim2.new(1, 0, 0, 0),
+        Size = UDim2.new(0, Slider.Width, 0, 0),
         AutomaticSize = "Y",
-        Position = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(1, 0, .5, 0),
+        AnchorPoint = Vector2.new(1,0.5),
         BackgroundTransparency = 1,
-        Parent = Slider.SliderFrame.UIElements.Container,
+        Parent = Slider.SliderFrame.UIElements.Main,
     }, {
         New("UIListLayout", {
             Padding = UDim.new(0, 8),
@@ -94,7 +104,7 @@ function Element:New(Config)
         }),
         Slider.UIElements.SliderIcon,
         New("TextBox", {
-            Size = UDim2.new(0,60,0,0),
+            Size = UDim2.new(0,Slider.TextBoxWidth,0,0),
             TextXAlignment = "Left",
             Text = FormatValue(Value),
             ThemeTag = {
@@ -110,10 +120,12 @@ function Element:New(Config)
     })
 
     function Slider:Lock()
+        Slider.Locked = true
         CanCallback = false
         return Slider.SliderFrame:Lock()
     end
     function Slider:Unlock()
+        Slider.Locked = false
         CanCallback = true
         return Slider.SliderFrame:Unlock()
     end
@@ -121,6 +133,8 @@ function Element:New(Config)
     if Slider.Locked then
         Slider:Lock()
     end
+    
+    local ScrollingFrameParent = Slider.SliderFrame.Parent:IsA("ScrollingFrame") and Slider.SliderFrame.Parent or Slider.SliderFrame.Parent.Parent.Parent
     
     function Slider:Set(Value, input)
         if CanCallback then
@@ -131,7 +145,7 @@ function Element:New(Config)
                 Value = CalculateValue(Slider.Value.Min + delta * (Slider.Value.Max - Slider.Value.Min))
     
                 if Value ~= LastValue then
-                    Tween(Slider.UIElements.SliderIcon.Frame, 0.08, {Size = UDim2.new(delta,0,1,0)}):Play()
+                    Tween(Slider.UIElements.SliderIcon.Frame, 0.05, {Size = UDim2.new(delta,0,1,0)}):Play()
                     Slider.UIElements.SliderContainer.TextBox.Text = FormatValue(Value)
                     Slider.Value.Default = FormatValue(Value)
                     LastValue = Value
@@ -140,7 +154,7 @@ function Element:New(Config)
     
                 if input then
                     isTouch = (input.UserInputType == Enum.UserInputType.Touch)
-                    Slider.SliderFrame.Parent.ScrollingEnabled = false
+                    ScrollingFrameParent.ScrollingEnabled = false
                     HoldingSlider = true
                     moveconnection = game:GetService("RunService").RenderStepped:Connect(function()
                         local inputPosition = isTouch and input.Position.X or game:GetService("UserInputService"):GetMouseLocation().X
@@ -148,7 +162,7 @@ function Element:New(Config)
                         Value = CalculateValue(Slider.Value.Min + delta * (Slider.Value.Max - Slider.Value.Min))
     
                         if Value ~= LastValue then
-                            Tween(Slider.UIElements.SliderIcon.Frame, 0.08, {Size = UDim2.new(delta,0,1,0)}):Play()
+                            Tween(Slider.UIElements.SliderIcon.Frame, 0.05, {Size = UDim2.new(delta,0,1,0)}):Play()
                             Slider.UIElements.SliderContainer.TextBox.Text = FormatValue(Value)
                             Slider.Value.Default = FormatValue(Value)
                             LastValue = Value
@@ -160,11 +174,37 @@ function Element:New(Config)
                             moveconnection:Disconnect()
                             releaseconnection:Disconnect()
                             HoldingSlider = false
-                            Slider.SliderFrame.Parent.ScrollingEnabled = true
+                            ScrollingFrameParent.ScrollingEnabled = true
+                            
+                            Tween(Slider.UIElements.SliderIcon.Frame.Thumb, .12, { Size = UDim2.new(0,Slider.ThumbSize,0,Slider.ThumbSize) }, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut):Play()
                         end
                     end)
                 end
             end
+        end
+    end
+    
+    function Slider:SetMax(newMax)
+        Slider.Value.Max = newMax
+        
+        local currentValue = tonumber(Slider.Value.Default) or LastValue
+        if currentValue > newMax then
+            Slider:Set(newMax)
+        else
+            local newDelta = math.clamp((currentValue - (Slider.Value.Min or 0)) / (newMax - (Slider.Value.Min or 0)), 0, 1)
+            Tween(Slider.UIElements.SliderIcon.Frame, 0.1, {Size = UDim2.new(newDelta, 0, 1, 0)}):Play()
+        end
+    end
+    
+    function Slider:SetMin(newMin)
+        Slider.Value.Min = newMin
+        
+        local currentValue = tonumber(Slider.Value.Default) or LastValue
+        if currentValue < newMin then
+            Slider:Set(newMin)
+        else
+            local newDelta = math.clamp((currentValue - newMin) / ((Slider.Value.Max or 100) - newMin), 0, 1)
+            Tween(Slider.UIElements.SliderIcon.Frame, 0.1, {Size = UDim2.new(newDelta, 0, 1, 0)}):Play()
         end
     end
     
@@ -181,6 +221,10 @@ function Element:New(Config)
     
     Creator.AddSignal(Slider.UIElements.SliderContainer.InputBegan, function(input)
         Slider:Set(Value, input)
+        
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Tween(Slider.UIElements.SliderIcon.Frame.Thumb, .12, { Size = UDim2.new(0,Slider.ThumbSize+8,0,Slider.ThumbSize+8) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        end
     end)
     
     return Slider.__type, Slider

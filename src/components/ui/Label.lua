@@ -5,7 +5,7 @@ local New = Creator.New
 local Tween = Creator.Tween
 
 
-function Label.New(Text, Icon, Parent)
+function Label.New(Text, Icon, Parent, IsPlaceholder)
     local Radius = 10
     local IconLabelFrame
     if Icon and Icon ~= "" then
@@ -23,12 +23,12 @@ function Label.New(Text, Icon, Parent)
     
     local TextLabel = New("TextLabel", {
         BackgroundTransparency = 1,
-        TextSize = 16,
+        TextSize = 17,
         FontFace = Font.new(Creator.Font, Enum.FontWeight.Regular),
         Size = UDim2.new(1,IconLabelFrame and -29 or 0,1,0),
         TextXAlignment = "Left",
         ThemeTag = {
-            TextColor3 = "Text",
+            TextColor3 = IsPlaceholder and "Placeholder" or "Text",
         },
         Text = Text,
     })
@@ -48,14 +48,28 @@ function Label.New(Text, Icon, Parent)
                     ImageColor3 = "Accent",
                 },
                 Size = UDim2.new(1,0,1,0),
-                ImageTransparency = .85,
+                ImageTransparency = .97,
             }),
             Creator.NewRoundFrame(Radius, "SquircleOutline", {
                 ThemeTag = {
                     ImageColor3 = "Outline",
                 },
                 Size = UDim2.new(1,0,1,0),
-                ImageTransparency = .9,
+                ImageTransparency = .95,
+            }, {
+                New("UIGradient", {
+                    Rotation = 70,
+                    Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
+                    }),
+                    Transparency = NumberSequence.new({
+                        NumberSequenceKeypoint.new(0.0, 0.1),
+                        NumberSequenceKeypoint.new(0.5, 1),
+                        NumberSequenceKeypoint.new(1.0, 0.1),
+                    })
+                })
             }),
             Creator.NewRoundFrame(Radius, "Squircle", {
                 Size = UDim2.new(1,0,1,0),

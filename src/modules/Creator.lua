@@ -1,26 +1,32 @@
---[[
-
-Credits: dawid 
-
-]]
-
 local RunService = game:GetService("RunService")
 local RenderStepped = RunService.Heartbeat
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local LocalizationService = game:GetService("LocalizationService")
+local HttpService = game:GetService("HttpService")
 
-local Icons = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Footagesus/Icons/main/Main.lua"))()
+local IconsURL = "https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"
+
+local Icons = loadstring(
+    game.HttpGetAsync and game:HttpGetAsync(IconsURL)
+    or HttpService:GetAsync(IconsURL)
+)()
 Icons.SetIconsType("lucide")
 
+local WindUI
+
 local Creator = {
-    Font = "rbxassetid://12187365364", -- Inter
+    Font = "rbxassetid://12187365364",
+    Localization = nil,
     CanDraggable = true,
     Theme = nil,
     Themes = nil,
-    WindUI = nil,
+    Icons = Icons,
     Signals = {},
     Objects = {},
+    LocalizationObjects = {},
     FontObjects = {},
+    Language = string.match(LocalizationService.SystemLocaleId , "^[a-z]+"),
     Request = http_request or (syn and syn.request) or request,
     DefaultProperties = {
         ScreenGui = {
@@ -74,25 +80,29 @@ local Creator = {
         ScrollingFrame = {
             ScrollBarImageTransparency = 1,
             BorderSizePixel = 0,
+        },
+        VideoFrame = {
+            BorderSizePixel = 0,
         }
     },
     Colors = {
-        Red = "#e53935",    -- Danger
-        Orange = "#f57c00", -- Warning
-        Green = "#43a047",  -- Success
-        Blue = "#039be5",   -- Info
-        White = "#ffffff",   -- White
-        Grey = "#484848",   -- Grey
-    }
+        Red = "#e53935",
+        Orange = "#f57c00",
+        Green = "#43a047",
+        Blue = "#039be5",
+        White = "#ffffff",
+        Grey = "#484848",
+    },
 }
 
-function Creator.Init(WindUI)
-    Creator.WindUI = WindUI
+function Creator.Init(WindUITable)
+    WindUI = WindUITable
 end
 
-
 function Creator.AddSignal(Signal, Function)
-	table.insert(Creator.Signals, Signal:Connect(Function))
+    local conn = Signal:Connect(Function)
+    table.insert(Creator.Signals, conn)
+    return conn
 end
 
 function Creator.DisconnectAll()
@@ -102,25 +112,63 @@ function Creator.DisconnectAll()
 	end
 end
 
--- ↓ Debug mode
 function Creator.SafeCallback(Function, ...)
-	if not Function then
-		return
-	end
+    if not Function then
+        return
+    end
+    
+    local Success, Event = pcall(Function, ...)
+    if not Success then
+        if WindUI and WindUI.Window and WindUI.Window.Debug then
+            local _, i = Event:find(":%d+: ")
+        
+            warn("[ WindUI: DEBUG Mode ] " .. Event)
+            
+            return WindUI:Notify({
+                Title = "DEBUG Mode: Error",
+                Content = not i and Event or Event:sub(i + 1),
+                Duration = 8,
+            })
+        end
+    end
+end
 
-	local Success, Event = pcall(Function, ...)
-	if not Success then
-		local _, i = Event:find(":%d+: ")
+function Creator.Gradient(stops, props)
+    if WindUI and WindUI.Gradient then
+        return WindUI:Gradient(stops, props)
+    end
+    
+    local colorSequence = {}
+    local transparencySequence = {}
 
+    for posStr, stop in next, stops do
+        local position = tonumber(posStr)
+        if position then
+            position = math.clamp(position / 100, 0, 1)
+            table.insert(colorSequence, ColorSequenceKeypoint.new(position, stop.Color))
+            table.insert(transparencySequence, NumberSequenceKeypoint.new(position, stop.Transparency or 0))
+        end
+    end
 
-	    warn("[ WindUI: DEBUG Mode ] " .. Event)
-	    
-		return Creator.WindUI:Notify({
-			Title = "DEBUG Mode: Error",
-			Content = not i and Event or Event:sub(i + 1),
-			Duration = 8,
-		})
-	end
+    table.sort(colorSequence, function(a, b) return a.Time < b.Time end)
+    table.sort(transparencySequence, function(a, b) return a.Time < b.Time end)
+
+    if #colorSequence < 2 then
+        error("ColorSequence requires at least 2 keypoints")
+    end
+
+    local gradientData = {
+        Color = ColorSequence.new(colorSequence),
+        Transparency = NumberSequence.new(transparencySequence),
+    }
+
+    if props then
+        for k, v in pairs(props) do
+            gradientData[k] = v
+        end
+    end
+
+    return gradientData
 end
 
 function Creator.SetTheme(Theme)
@@ -141,7 +189,27 @@ function Creator.UpdateFont(FontId)
 end
 
 function Creator.GetThemeProperty(Property, Theme)
-    return Theme[Property] or Creator.Themes["Dark"][Property]
+    local value = Theme[Property] or Creator.Themes["Dark"][Property]
+    
+    if not value then return nil end
+    
+    if type(value) == "string" and string.sub(value, 1, 1) == "#" then
+        return Color3.fromHex(value)
+    end
+    
+    if typeof(value) == "Color3" then
+        return value
+    end
+    
+    if type(value) == "table" and value.Color and value.Transparency then
+        return value
+    end
+    
+    if type(value) == "function" then
+        return value()
+    end
+    
+    return nil
 end
 
 function Creator.AddThemeObject(Object, Properties)
@@ -150,15 +218,53 @@ function Creator.AddThemeObject(Object, Properties)
     return Object
 end
 
+function Creator.AddLangObject(idx)
+    local currentObj = Creator.LocalizationObjects[idx]
+    local Object = currentObj.Object
+    local TranslationId = currentObjTranslationId
+    Creator.UpdateLang(Object, TranslationId)
+    return Object
+end
+
 function Creator.UpdateTheme(TargetObject, isTween)
     local function ApplyTheme(objData)
         for Property, ColorKey in pairs(objData.Properties or {}) do
-            local Color = Creator.GetThemeProperty(ColorKey, Creator.Theme)
-            if Color then
-                if not isTween then
-                    objData.Object[Property] = Color3.fromHex(Color)
-                else
-                    Creator.Tween(objData.Object, 0.08, { [Property] = Color3.fromHex(Color) }):Play()
+            local value = Creator.GetThemeProperty(ColorKey, Creator.Theme)
+            if value then
+                if typeof(value) == "Color3" then
+                    local gradient = objData.Object:FindFirstChild("WindUIGradient")
+                    if gradient then
+                        gradient:Destroy()
+                    end
+                    
+                    if not isTween then
+                        objData.Object[Property] = value
+                    else
+                        Creator.Tween(objData.Object, 0.08, { [Property] = value }):Play()
+                    end
+                elseif type(value) == "table" and value.Color and value.Transparency then
+                    objData.Object[Property] = Color3.new(1, 1, 1)
+                    
+                    local gradient = objData.Object:FindFirstChild("WindUIGradient")
+                    if not gradient then
+                        gradient = Instance.new("UIGradient")
+                        gradient.Name = "WindUIGradient"
+                        gradient.Parent = objData.Object
+                    end
+                    
+                    gradient.Color = value.Color
+                    gradient.Transparency = value.Transparency
+                    
+                    for prop, propValue in pairs(value) do
+                        if prop ~= "Color" and prop ~= "Transparency" and gradient[prop] ~= nil then
+                            gradient[prop] = propValue
+                        end
+                    end
+                end
+            else
+                local gradient = objData.Object:FindFirstChild("WindUIGradient")
+                if gradient then
+                    gradient:Destroy()
                 end
             end
         end
@@ -176,8 +282,75 @@ function Creator.UpdateTheme(TargetObject, isTween)
     end
 end
 
+function Creator.SetLangForObject(index)
+    if Creator.Localization and Creator.Localization.Enabled then
+        local data = Creator.LocalizationObjects[index]
+        if not data then return end
+        
+        local obj = data.Object
+        local translationId = data.TranslationId
+        
+        local translations = Creator.Localization.Translations[Creator.Language]
+        if translations and translations[translationId] then
+            obj.Text = translations[translationId]
+        else
+            local enTranslations = Creator.Localization and Creator.Localization.Translations and Creator.Localization.Translations.en or nil
+            if enTranslations and enTranslations[translationId] then
+                obj.Text = enTranslations[translationId]
+            else
+                obj.Text = "[" .. translationId .. "]"
+            end
+        end
+    end
+end
+
+function Creator:ChangeTranslationKey(object, newKey)
+    if Creator.Localization and Creator.Localization.Enabled then
+        local ParsedKey = string.match(newKey, "^" .. Creator.Localization.Prefix .. "(.+)")
+        if ParsedKey then
+            for i, data in ipairs(Creator.LocalizationObjects) do
+                if data.Object == object then
+                    data.TranslationId = ParsedKey
+                    Creator.SetLangForObject(i)
+                    return
+                end
+            end
+            
+            table.insert(Creator.LocalizationObjects, {
+                TranslationId = ParsedKey,
+                Object = object
+            })
+            Creator.SetLangForObject(#Creator.LocalizationObjects)
+        end
+    end
+end
+
+function Creator.UpdateLang(newLang)
+    if newLang then
+        Creator.Language = newLang
+    end
+    
+    for i = 1, #Creator.LocalizationObjects do
+        local data = Creator.LocalizationObjects[i]
+        if data.Object and data.Object.Parent ~= nil then
+            Creator.SetLangForObject(i)
+        else
+            Creator.LocalizationObjects[i] = nil
+        end
+    end
+end
+
+function Creator.SetLanguage(lang)
+    Creator.Language = lang
+    Creator.UpdateLang()
+end
+
 function Creator.Icon(Icon)
     return Icons.Icon(Icon)
+end
+
+function Creator.AddIcons(packName, iconsData)
+    return Icons.AddIcons(packName, iconsData)
 end
 
 function Creator.New(Name, Properties, Children)
@@ -190,6 +363,15 @@ function Creator.New(Name, Properties, Children)
     for Name, Value in next, Properties or {} do
         if Name ~= "ThemeTag" then
             Object[Name] = Value
+        end
+        if Creator.Localization and Creator.Localization.Enabled and Name == "Text" then
+            local TranslationId = string.match(Value, "^" .. Creator.Localization.Prefix .. "(.+)")
+            if TranslationId then
+                local currentId = #Creator.LocalizationObjects + 1
+                Creator.LocalizationObjects[currentId] = { TranslationId = TranslationId, Object = Object }
+                
+                Creator.SetLangForObject(currentId)
+            end
         end
     end
     
@@ -210,26 +392,34 @@ function Creator.Tween(Object, Time, Properties, ...)
     return TweenService:Create(Object, TweenInfo.new(Time, ...), Properties)
 end
 
-function Creator.NewRoundFrame(Radius, Type, Properties, Children, isButton)
-    -- local ThemeTags = {}
-    -- if Properties.ThemeTag then
-    --     for k, v in next, Properties.ThemeTag do
-    --         ThemeTags[k] = v
-    --     end
-    -- end
-    local Image = Creator.New(isButton and "ImageButton" or "ImageLabel", {
-        Image = Type == "Squircle" and "rbxassetid://80999662900595"
-             or Type == "SquircleOutline" and "rbxassetid://117788349049947" 
-             or Type == "SquircleOutline2" and "rbxassetid://117817408534198" 
-             or Type == "Shadow-sm" and "rbxassetid://84825982946844"
-             or Type == "Squircle-TL-TR" and "rbxassetid://73569156276236",
-        ScaleType = "Slice",
-        SliceCenter = Type ~= "Shadow-sm" and Rect.new(
+function Creator.NewRoundFrame(Radius, Type, Properties, Children, isButton, ReturnTable)
+    local function getImageForType(shapeType)
+        return shapeType == "Squircle" and "rbxassetid://80999662900595"
+             or shapeType == "SquircleOutline" and "rbxassetid://117788349049947" 
+             or shapeType == "SquircleOutline2" and "rbxassetid://117817408534198" 
+             or shapeType == "Squircle-Outline" and "rbxassetid://117817408534198" 
+             or shapeType == "Shadow-sm" and "rbxassetid://84825982946844"
+             or shapeType == "Squircle-TL-TR" and "rbxassetid://73569156276236"
+             or shapeType == "Squircle-BL-BR" and "rbxassetid://93853842912264"
+             or shapeType == "Squircle-TL-TR-Outline" and "rbxassetid://136702870075563"
+             or shapeType == "Squircle-BL-BR-Outline" and "rbxassetid://75035847706564"
+             or shapeType == "Square" and "rbxassetid://82909646051652"
+             or shapeType == "Square-Outline" and "rbxassetid://72946211851948"
+    end
+    
+    local function getSliceCenterForType(shapeType)
+        return shapeType ~= "Shadow-sm" and Rect.new(
             512/2,
             512/2,
             512/2,
             512/2
-            ) or Rect.new(512,512,512,512),
+        ) or Rect.new(512,512,512,512)
+    end
+    
+    local Image = Creator.New(isButton and "ImageButton" or "ImageLabel", {
+        Image = getImageForType(Type),
+        ScaleType = "Slice",
+        SliceCenter = getSliceCenterForType(Type),
         SliceScale = 1,
         BackgroundTransparency = 1,
         ThemeTag = Properties.ThemeTag and Properties.ThemeTag
@@ -243,12 +433,45 @@ function Creator.NewRoundFrame(Radius, Type, Properties, Children, isButton)
 
     local function UpdateSliceScale(newRadius)
         local sliceScale = Type ~= "Shadow-sm" and (newRadius / (512/2)) or (newRadius/512)
-        Image.SliceScale = sliceScale
+        Image.SliceScale = math.max(sliceScale, 0.0001)
+    end
+    
+    local Wrapper = {}
+    
+    function Wrapper:SetRadius(newRadius)
+        UpdateSliceScale(newRadius)
+    end
+    
+    function Wrapper:SetType(newType)
+        Type = newType
+        Image.Image = getImageForType(newType)
+        Image.SliceCenter = getSliceCenterForType(newType)
+        UpdateSliceScale(Radius)
+    end
+    
+    function Wrapper:UpdateShape(newRadius, newType)
+        if newType then
+            Type = newType
+            Image.Image = getImageForType(newType)
+            Image.SliceCenter = getSliceCenterForType(newType)
+        end
+        if newRadius then
+            Radius = newRadius
+        end
+        UpdateSliceScale(Radius)
+    end
+    
+    function Wrapper:GetRadius()
+        return Radius
+    end
+    
+    function Wrapper:GetType()
+        return Type
     end
     
     UpdateSliceScale(Radius)
 
-    return Image
+    return Image, ReturnTable and Wrapper or nil
 end
 
 local New = Creator.New
@@ -328,6 +551,8 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
     return DragModule
 end
 
+Icons.Init(New, "Icon")
+
 function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
     local function SanitizeFilename(str)
         str = str:gsub("[%s/\\:*?\"<>|]+", "-")
@@ -339,8 +564,7 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
     Name = SanitizeFilename(Name)
     
     local ImageFrame = New("Frame", {
-        Size = UDim2.new(0,0,0,0), -- czjzjznsmMdj
-        --AutomaticSize = "XY",
+        Size = UDim2.new(0,0,0,0),
         BackgroundTransparency = 1,
     }, {
         New("ImageLabel", {
@@ -348,7 +572,7 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
             BackgroundTransparency = 1,
             ScaleType = "Crop",
             ThemeTag = (Creator.Icon(Img) or Themed) and {
-                ImageColor3 = IsThemeTag and "Icon" 
+                ImageColor3 = IsThemeTag and "Icon" or nil 
             } or nil,
         }, {
             New("UICorner", {
@@ -357,11 +581,18 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
         })
     })
     if Creator.Icon(Img) then
-        ImageFrame.ImageLabel.Image = Creator.Icon(Img)[1]
-        ImageFrame.ImageLabel.ImageRectOffset = Creator.Icon(Img)[2].ImageRectPosition
-        ImageFrame.ImageLabel.ImageRectSize = Creator.Icon(Img)[2].ImageRectSize
-    end
-    if string.find(Img,"http") then
+        ImageFrame.ImageLabel:Destroy()
+        
+        local IconLabel = Icons.Image({ 
+            Icon = Img, 
+            Size = UDim2.new(1,0,1,0), 
+            Colors = { 
+                (IsThemeTag and "Icon" or false),
+                "Button" 
+            } 
+        }).IconFrame
+        IconLabel.Parent = ImageFrame
+    elseif string.find(Img,"http") then
         local FileName = "WindUI/" .. Folder .. "/Assets/." .. Type .. "-" .. Name .. ".png"
         local success, response = pcall(function()
             task.spawn(function()
@@ -381,7 +612,9 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
             
             ImageFrame:Destroy()
         end
-    elseif string.find(Img,"rbxassetid") then
+    elseif Img == "" then
+        ImageFrame.Visible = false
+    else
         ImageFrame.ImageLabel.Image = Img
     end
     

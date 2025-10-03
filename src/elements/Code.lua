@@ -11,7 +11,7 @@ function Element:New(Config)
         __type = "Code",
         Title = Config.Title,
         Code = Config.Code,
-        UIElements = {}
+        OnCopy = Config.OnCopy,
     }
     
     local CanCallback = not Code.Locked
@@ -31,15 +31,10 @@ function Element:New(Config)
             local NewTitle = Code.Title or "code"
             local success, result = pcall(function()
                 toclipboard(Code.Code)
+                
+                if Code.OnCopy then Code.OnCopy() end
             end)
-            if success then
-                Config.WindUI:Notify({
-                    Title = "Success",
-                    Content = "The " .. NewTitle .. " copied to your clipboard.",
-                    Icon = "check",
-                    Duration = 5,
-                })
-            else
+            if not success then
                 Config.WindUI:Notify({
                     Title = "Error",
                     Content = "The " .. NewTitle .. " is not copied. Error: " .. result,
@@ -48,11 +43,18 @@ function Element:New(Config)
                 })
             end
         end
-    end, Config.WindUI.UIScale)
+    end, Config.WindUI.UIScale, Code)
     
     function Code:SetCode(code)
         CodeElement.Set(code)
     end
+    
+    function Code:Destroy()
+        CodeElement.Destroy()
+        Code = nil
+    end
+    
+    Code.ElementFrame = CodeElement.CodeFrame
     
     return Code.__type, Code
 end

@@ -19,7 +19,7 @@ local Element = {
     UIPadding = 8
 }
 
-function Element:Colorpicker(Config, OnApply)
+function Element:Colorpicker(Config, Window, OnApply)
     local Colorpicker = {
         __type = "Colorpicker",
         Title = Config.Title,
@@ -28,6 +28,8 @@ function Element:Colorpicker(Config, OnApply)
         Callback = Config.Callback,
         Transparency = Config.Transparency,
         UIElements = Config.UIElements,
+        
+        TextPadding = 10,
     }
     
     function Colorpicker:SetHSVFromRGB(Color)
@@ -39,10 +41,12 @@ function Element:Colorpicker(Config, OnApply)
 
 	Colorpicker:SetHSVFromRGB(Colorpicker.Default)
     
-    local ColorpickerModule = require("../components/window/Dialog").Init(Config.Window)
+    local ColorpickerModule = require("../components/window/Dialog").Init(Window)
     local ColorpickerFrame = ColorpickerModule.Create()
     
     Colorpicker.ColorpickerFrame = ColorpickerFrame
+    
+    ColorpickerFrame.UIElements.Main.Size = UDim2.new(1,0,0,0)
     
     --ColorpickerFrame:Close()
     
@@ -62,10 +66,10 @@ function Element:Colorpicker(Config, OnApply)
         Parent = ColorpickerFrame.UIElements.Main
     }, {
         New("UIPadding", {
-            PaddingTop = UDim.new(0,8),
-            PaddingLeft = UDim.new(0,8),
-            PaddingRight = UDim.new(0,8),
-            PaddingBottom = UDim.new(0,8),
+            PaddingTop = UDim.new(0,Colorpicker.TextPadding/2),
+            PaddingLeft = UDim.new(0,Colorpicker.TextPadding/2),
+            PaddingRight = UDim.new(0,Colorpicker.TextPadding/2),
+            PaddingBottom = UDim.new(0,Colorpicker.TextPadding/2),
         })
     })
     
@@ -73,44 +77,71 @@ function Element:Colorpicker(Config, OnApply)
     --     Colorpicker.UIElements.Title.Size = UDim2.new(1,0,0,Colorpicker.UIElements.Title.TextBounds.Y)
     -- end)
 
-    local SatCursor = New("ImageLabel", {
-		Size = UDim2.new(0, 18, 0, 18),
-		ScaleType = Enum.ScaleType.Fit,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundTransparency = 1,
-		Image = "http://www.roblox.com/asset/?id=4805639000",
+    local SatCursor = New("Frame", {
+		Size = UDim2.new(0,14,0,14),
+		AnchorPoint = Vector2.new(0.5,0.5),
+		Position = UDim2.new(0.5,0,0,0),
+		Parent = HueDragHolder,
+		BackgroundColor3 = Colorpicker.Default
+	}, {
+        New("UIStroke", {
+            Thickness = 2,
+            Transparency = .1,
+            ThemeTag = {
+			    Color = "Text",
+            },
+        }),
+        New("UICorner", {
+            CornerRadius = UDim.new(1,0),
+        })
 	})
 
     Colorpicker.UIElements.SatVibMap = New("ImageLabel", {
-  		Size = UDim2.fromOffset(160, 182-24),
-  		Position = UDim2.fromOffset(0, 40),
-  		Image = "rbxassetid://4155801252",
-  		BackgroundColor3 = Color3.fromHSV(Hue, 1, 1),
-  		BackgroundTransparency = 0,
-  		Parent = ColorpickerFrame.UIElements.Main,
-  	}, {
-  		New("UICorner", {
-  			CornerRadius = UDim.new(0,8),
-  		}),
-  		New("UIStroke", {
-  			Thickness = .6,
-  			ThemeTag = {
-  			    Color = "Text"
-  			},
-  			Transparency = .8,
-  		}),
-  		SatCursor,
-  	})
-  	
+        Size = UDim2.fromOffset(160, 182-24),
+        Position = UDim2.fromOffset(0, 40+Colorpicker.TextPadding),
+        Image = "rbxassetid://4155801252",
+        BackgroundColor3 = Color3.fromHSV(Hue, 1, 1),
+        BackgroundTransparency = 0,
+        Parent = ColorpickerFrame.UIElements.Main,
+      }, {
+        New("UICorner", {
+            CornerRadius = UDim.new(0,8),
+        }),
+        Creator.NewRoundFrame(8, "SquircleOutline", {
+            ThemeTag = {
+                ImageColor3 = "Outline",
+            },
+            Size = UDim2.new(1,0,1,0),
+            ImageTransparency = .85,
+            ZIndex = 99999,
+        }, {
+            New("UIGradient", {
+                Rotation = 45,
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0.0, 0.1),
+                    NumberSequenceKeypoint.new(0.5, 1),
+                    NumberSequenceKeypoint.new(1.0, 0.1),
+                })
+            })
+        }),
+    
+        SatCursor,
+      })
+      
   	Colorpicker.UIElements.Inputs = New("Frame", {
   	    AutomaticSize = "XY",
   	    Size = UDim2.new(0,0,0,0),
-  	    Position = UDim2.fromOffset(Colorpicker.Transparency and 160+10+10+10+10+10+10+20 or 160+10+10+10+20, 40),
+  	    Position = UDim2.fromOffset(Colorpicker.Transparency and 160+10+10+10+10+10+10+20 or 160+10+10+10+20, 40 + Colorpicker.TextPadding),
   	    BackgroundTransparency = 1,
   	    Parent = ColorpickerFrame.UIElements.Main
   	}, {
   	    New("UIListLayout", {
-  		    Padding = UDim.new(0, 5),
+  		    Padding = UDim.new(0, 4),
   		    FillDirection = "Vertical",
   	    })
   	})
@@ -135,22 +166,44 @@ function Element:Colorpicker(Config, OnApply)
 		ScaleType = Enum.ScaleType.Tile,
 		TileSize = UDim2.fromOffset(40, 40),
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(75+10, 40+182-24+10),
+		Position = UDim2.fromOffset(75+10, 40+182-24+10 + Colorpicker.TextPadding),
 		Size = UDim2.fromOffset(75, 24),
 		Parent = ColorpickerFrame.UIElements.Main,
 	}, {
 		New("UICorner", {
 			CornerRadius = UDim.new(0, 8),
 		}),
-		New("UIStroke", {
-			Thickness = 1,
-			Transparency = 0.8,
-			ThemeTag = {
-			    Color = "Text"
-			}
-		}),
-		OldColorFrame,
-	})
+		Creator.NewRoundFrame(8, "SquircleOutline", {
+            ThemeTag = {
+                ImageColor3 = "Outline",
+            },
+            Size = UDim2.new(1,0,1,0),
+            ImageTransparency = .85,
+            ZIndex = 99999,
+        }, {
+            New("UIGradient", {
+                Rotation = 60,
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0.0, 0.1),
+                    NumberSequenceKeypoint.new(0.5, 1),
+                    NumberSequenceKeypoint.new(1.0, 0.1),
+                })
+            })
+        }),
+--		New("UIStroke", {
+--			Thickness = 1,
+--			Transparency = 0.8,
+--			ThemeTag = {
+--			    Color = "Text"
+--			}
+--		}),
+  		OldColorFrame,
+  	})
 
 	local NewDisplayFrame = New("Frame", {
 		BackgroundColor3 = Colorpicker.Default,
@@ -163,26 +216,48 @@ function Element:Colorpicker(Config, OnApply)
 		}),
 	})
 
-	local NewDisplayFrameChecker = New("ImageLabel", {
-		Image = "http://www.roblox.com/asset/?id=14204231522",
-		ImageTransparency = 0.45,
-		ScaleType = Enum.ScaleType.Tile,
-		TileSize = UDim2.fromOffset(40, 40),
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(0, 40+182-24+10),
-		Size = UDim2.fromOffset(75, 24),
-		Parent = ColorpickerFrame.UIElements.Main,
-	}, {
-		New("UICorner", {
-			CornerRadius = UDim.new(0, 8),
-		}),
-		New("UIStroke", {
-			Thickness = 1,
-			Transparency = 0.8,
-			ThemeTag = {
-			    Color = "Text"
-			}
-		}),
+  	local NewDisplayFrameChecker = New("ImageLabel", {
+  		Image = "http://www.roblox.com/asset/?id=14204231522",
+  		ImageTransparency = 0.45,
+  		ScaleType = Enum.ScaleType.Tile,
+  		TileSize = UDim2.fromOffset(40, 40),
+  		BackgroundTransparency = 1,
+  		Position = UDim2.fromOffset(0, 40+182-24+10 + Colorpicker.TextPadding),
+  		Size = UDim2.fromOffset(75, 24),
+  		Parent = ColorpickerFrame.UIElements.Main,
+  	}, {
+  		New("UICorner", {
+  			CornerRadius = UDim.new(0, 8),
+  		}),
+--		New("UIStroke", {
+--			Thickness = 1,
+--			Transparency = 0.8,
+--			ThemeTag = {
+--			    Color = "Text"
+--			}
+--		}),
+        Creator.NewRoundFrame(8, "SquircleOutline", {
+            ThemeTag = {
+                ImageColor3 = "Outline",
+            },
+            Size = UDim2.new(1,0,1,0),
+            ImageTransparency = .85,
+            ZIndex = 99999,
+        }, {
+            New("UIGradient", {
+                Rotation = 60,
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0.0, 0.1),
+                    NumberSequenceKeypoint.new(0.5, 1),
+                    NumberSequenceKeypoint.new(1.0, 0.1),
+                })
+            })
+        }),
 		NewDisplayFrame,
 	})
 	
@@ -225,8 +300,8 @@ function Element:Colorpicker(Config, OnApply)
 	})
 
 	local HueSlider = New("Frame", {
-		Size = UDim2.fromOffset(10, 182+10),
-		Position = UDim2.fromOffset(160+10+10, 40),
+		Size = UDim2.fromOffset(6, 182+10),
+		Position = UDim2.fromOffset(160+10+10, 40 + Colorpicker.TextPadding),
 		Parent = ColorpickerFrame.UIElements.Main,
 	}, {
 		New("UICorner", {
@@ -287,7 +362,7 @@ function Element:Colorpicker(Config, OnApply)
 	local ButtonsContent = New("Frame", {
         Size = UDim2.new(1,0,0,40),
         AutomaticSize = "Y",
-        Position = UDim2.new(0,0,0,40+8+182+24),
+        Position = UDim2.new(0,0,0,40+8+182+24 + Colorpicker.TextPadding),
         BackgroundTransparency = 1,
         Parent = ColorpickerFrame.UIElements.Main,
         LayoutOrder = 4,
@@ -297,6 +372,12 @@ function Element:Colorpicker(Config, OnApply)
 		    FillDirection = "Horizontal",
 		    HorizontalAlignment = "Right",
 	    }),
+	   -- New("UIPadding", {
+    --         PaddingTop = UDim.new(0, Colorpicker.TextPadding/2),
+    --         PaddingLeft = UDim.new(0, Colorpicker.TextPadding/2),
+    --         PaddingRight = UDim.new(0, Colorpicker.TextPadding/2),
+    --         PaddingBottom = UDim.new(0, Colorpicker.TextPadding/2),
+    --     })
     })
 	
 	local Buttons = {
@@ -314,7 +395,7 @@ function Element:Colorpicker(Config, OnApply)
 	}
 	
 	for _,Button in next, Buttons do
-        local ButtonFrame = CreateButton(Button.Title, Button.Icon, Button.Callback, Button.Variant, ButtonsContent, ColorpickerFrame, true)
+        local ButtonFrame = CreateButton(Button.Title, Button.Icon, Button.Callback, Button.Variant, ButtonsContent, ColorpickerFrame, false)
         ButtonFrame.Size = UDim2.new(0.5,-3,0,40)
         ButtonFrame.AutomaticSize = "None"
     end
@@ -368,8 +449,8 @@ function Element:Colorpicker(Config, OnApply)
 		})
 
 		TransparencySlider = New("Frame", {
-			Size = UDim2.fromOffset(10, 182+10),
-			Position = UDim2.fromOffset(160+10+10+10+10+10, 40),
+			Size = UDim2.fromOffset(6, 182+10),
+			Position = UDim2.fromOffset(160+10+10+10+10+10, 40 + Colorpicker.TextPadding),
 			Parent = ColorpickerFrame.UIElements.Main,
 			BackgroundTransparency = 1,
 		}, {
@@ -407,6 +488,7 @@ function Element:Colorpicker(Config, OnApply)
             
         Colorpicker.UIElements.SatVibMap.BackgroundColor3 = Color3.fromHSV(Hue, 1, 1)
         SatCursor.Position = UDim2.new(Sat, 0, 1 - Vib, 0)
+        SatCursor.BackgroundColor3 = Color3.fromHSV(Hue, Sat, Vib)
         NewDisplayFrame.BackgroundColor3 = Color3.fromHSV(Hue, Sat, Vib)
         HueDrag.BackgroundColor3 = Color3.fromHSV(Hue, 1, 1)
         HueDrag.Position = UDim2.new(0.5, 0, Hue, 0)
@@ -553,13 +635,15 @@ function Element:New(Config)
         Locked = Config.Locked or false,
         Default = Config.Default or Color3.new(1,1,1),
         Callback = Config.Callback or function() end,
-        Window = Config.Window,
+        --Window = Config.Window,
+        UIScale = Config.UIScale,
         Transparency = Config.Transparency,
         UIElements = {}
     }
     
     local CanCallback = true
     
+    if Config.Window.NewElements then Element.UICorner = 14 end
     
     Colorpicker.ColorpickerFrame = require("../components/window/Element")({
         Title = Colorpicker.Title,
@@ -567,6 +651,10 @@ function Element:New(Config)
         Parent = Config.Parent,
         TextOffset = 40,
         Hover = false,
+        Tab = Config.Tab,
+        Index = Config.Index,
+        Window = Config.Window,
+        ElementTable = Colorpicker,
     })
     
     Colorpicker.UIElements.Colorpicker = Creator.NewRoundFrame(Element.UICorner, "Squircle",{
@@ -575,17 +663,19 @@ function Element:New(Config)
         ImageColor3 = Colorpicker.Default,
         Parent = Colorpicker.ColorpickerFrame.UIElements.Main,
         Size = UDim2.new(0,30,0,30),
-        AnchorPoint = Vector2.new(1,0.5),
-        Position = UDim2.new(1,0,0.5,0),
+        AnchorPoint = Vector2.new(1,0),
+        Position = UDim2.new(1,0,0,0),
         ZIndex = 2
     }, nil, true)
     
     
     function Colorpicker:Lock()
+        Colorpicker.Locked = true
         CanCallback = false
         return Colorpicker.ColorpickerFrame:Lock()
     end
     function Colorpicker:Unlock()
+        Colorpicker.Locked = false
         CanCallback = true
         return Colorpicker.ColorpickerFrame:Unlock()
     end
@@ -610,7 +700,7 @@ function Element:New(Config)
     
     Creator.AddSignal(Colorpicker.UIElements.Colorpicker.MouseButton1Click, function()
         if CanCallback then
-            Element:Colorpicker(Colorpicker, function(color, transparency)
+            Element:Colorpicker(Colorpicker, Config.Window, function(color, transparency)
                 Colorpicker:Update(color, transparency)
                 Colorpicker.Default = color
                 Colorpicker.Transparency = transparency

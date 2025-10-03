@@ -2,22 +2,24 @@ local Creator = require("../../modules/Creator")
 local New = Creator.New
 local Tween = Creator.Tween
 
+local Winsow
+
 local DialogModule = {
     Holder = nil,
-    Window = nil,
+    --Window = nil,
     Parent = nil,
 }
 
-function DialogModule.Init(Window, Parent)
-    DialogModule.Window = Window
+function DialogModule.Init(WindowTable, Parent)
+    Window = WindowTable
     DialogModule.Parent = Parent
     return DialogModule
 end
 
 function DialogModule.Create(Key)
     local Dialog = {
-        UICorner = 32,
-        UIPadding = 12,
+        UICorner = 24,
+        UIPadding = 15,
         UIElements = {}
     }
     
@@ -32,10 +34,10 @@ function DialogModule.Create(Key)
             Size = UDim2.new(1,0,1,0),
             Active = false, -- true
             Visible = false, -- true
-            Parent = DialogModule.Parent or (DialogModule.Window and DialogModule.Window.UIElements and DialogModule.Window.UIElements.Main and DialogModule.Window.UIElements.Main.Main)
+            Parent = DialogModule.Parent or (Window and Window.UIElements and Window.UIElements.Main and Window.UIElements.Main.Main)
         }, {
             New("UICorner", {
-                CornerRadius = UDim.new(0,DialogModule.Window.UICorner)
+                CornerRadius = UDim.new(0,Window.UICorner)
             })
         })
     end
@@ -82,7 +84,7 @@ function DialogModule.Create(Key)
         -- }),
         Creator.NewRoundFrame(Dialog.UICorner, "SquircleOutline2", {
             Size = UDim2.new(1,0,1,0),
-            ImageTransparency = .85,
+            ImageTransparency = 1,
             ThemeTag = {
                 ImageColor3 = "Outline",
             },

@@ -12,10 +12,11 @@ function KeySystem.new(Config, Filename, func)
     local KeyDialogInit = require("./window/Dialog").Init(nil, Config.WindUI.ScreenGui.KeySystem)
     local KeyDialog = KeyDialogInit.Create(true)
     
+    local Services = {}
     
     local EnteredKey
     
-    local ThumbnailSize = 200
+    local ThumbnailSize = (Config.KeySystem.Thumbnail and Config.KeySystem.Thumbnail.Width) or 200
     
     local UISize = 430
     if Config.KeySystem.Thumbnail and Config.KeySystem.Thumbnail.Image then
@@ -33,7 +34,7 @@ function KeySystem.new(Config, Filename, func)
             Config.Icon,
             Config.Title .. ":" .. Config.Icon,
             0,
-            Config.WindUI.Window,
+            "Temp",
             "KeySystem",
             Config.IconThemed
         )
@@ -108,7 +109,8 @@ function KeySystem.new(Config, Filename, func)
                 TextColor3 = "Text",
             },
             BackgroundTransparency = 1,
-            RichText = true
+            RichText = true,
+            TextWrapped = true,
         })
     end
 
@@ -149,13 +151,14 @@ function KeySystem.new(Config, Filename, func)
         ThumbnailFrame = New("ImageLabel", {
             Image = Config.KeySystem.Thumbnail.Image,
             BackgroundTransparency = 1,
-            Size = UDim2.new(0,ThumbnailSize,1,0),
+            Size = UDim2.new(0,ThumbnailSize,1,-12),
+            Position = UDim2.new(0,6,0,6),
             Parent = KeyDialog.UIElements.Main,
             ScaleType = "Crop"
         }, {
             ThumbnailTitle,
             New("UICorner", {
-                CornerRadius = UDim.new(0,0),
+                CornerRadius = UDim.new(0,26-6),
             })
         })
     end
@@ -200,7 +203,7 @@ function KeySystem.new(Config, Filename, func)
     if ThumbnailFrame then
         ExitButton.Parent = ThumbnailFrame
         ExitButton.Size = UDim2.new(0,0,0,42)
-        ExitButton.Position = UDim2.new(0,16,1,-16)
+        ExitButton.Position = UDim2.new(0,10,1,-10)
         ExitButton.AnchorPoint = Vector2.new(0,1)
     end
     
@@ -210,25 +213,264 @@ function KeySystem.new(Config, Filename, func)
         end, "Secondary", ButtonsContainer.Frame)
     end
     
-    local SubmitButton = CreateButton("Submit", "arrow-right", function()
-        local Key = EnteredKey
-        local isKey
-        if type(Config.KeySystem.Key) == "table" then
-            isKey = table.find(Config.KeySystem.Key, tostring(Key))
-        else
-            isKey = tostring(Config.KeySystem.Key) == tostring(Key)
+    if Config.KeySystem.API then
+        -- local Icons = {
+        --     platoboost = "rbxassetid://75920162824531",
+        --     pandadevelopment = "panda",
+        -- }
+        -- local Names = {
+        --     platoboost = "Platoboost",
+        --     pandadevelopment = "Panda Development",
+        -- }
+        local Width = 240
+        local Opened = false
+        local ButtonFrame = CreateButton("Get key", "key", nil, "Secondary", ButtonsContainer.Frame)
+        
+        local Divider = Creator.NewRoundFrame(99, "Squircle", {
+            Size = UDim2.new(0,1,1,0),
+            ThemeTag = {
+                ImageColor3 = "Text",
+            },
+            ImageTransparency = .9,
+        })
+        
+        local DividerContainer = New("Frame", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0,0,1,0),
+            AutomaticSize = "X",
+            Parent = ButtonFrame.Frame,
+        }, {
+            Divider,
+            New("UIPadding", {
+                PaddingLeft = UDim.new(0,5),
+                PaddingRight = UDim.new(0,5),
+            })
+        })
+        
+        local ChevronDown = Creator.Image(
+            "chevron-down",
+            "chevron-down",
+            0,
+            "Temp",
+            "KeySystem",
+            true
+        )
+        
+        ChevronDown.Size = UDim2.new(1,0,1,0)
+        
+        local IconContainer = New("Frame", {
+            Size = UDim2.new(0,24-3,0,24-3),
+            Parent = ButtonFrame.Frame,
+            BackgroundTransparency = 1,
+        }, {
+            ChevronDown
+        })
+        
+        local DropdownFrame = Creator.NewRoundFrame(15, "Squircle", {
+            Size = UDim2.new(1,0,0,0),
+            AutomaticSize = "Y",
+            ThemeTag = {
+                ImageColor3 = "Background",
+            },
+        }, {
+            New("UIPadding", {
+                PaddingTop = UDim.new(0,10/2),
+                PaddingLeft = UDim.new(0,10/2),
+                PaddingRight = UDim.new(0,10/2),
+                PaddingBottom = UDim.new(0,10/2),
+            }),
+            New("UIListLayout", {
+                FillDirection = "Vertical",
+                Padding = UDim.new(0,10/2),
+            })
+        })
+        
+        local DropdownContainer = New("Frame", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0,Width,0,0),
+            ClipsDescendants = true,
+            AnchorPoint = Vector2.new(1,0),
+            Parent = ButtonFrame,
+            Position = UDim2.new(1,0,1,15)
+        }, {
+            DropdownFrame
+        })
+        
+        New("TextLabel", {
+            Text = "Select Service",
+            BackgroundTransparency = 1,
+            FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
+            ThemeTag = { TextColor3 = "Text" },
+            TextTransparency = 0.2,
+            TextSize = 16,
+            Size = UDim2.new(1, 0, 0, 0),
+            AutomaticSize = "Y",
+            TextWrapped = true,
+            TextXAlignment = "Left",
+            Parent = DropdownFrame,
+        }, {
+            New("UIPadding", {
+                PaddingTop = UDim.new(0, 10),
+                PaddingLeft = UDim.new(0, 10),
+                PaddingRight = UDim.new(0, 10),
+                PaddingBottom = UDim.new(0, 10),
+            })
+        })
+        
+        for _, i in next, Config.KeySystem.API do
+            local serviceDef = Config.WindUI.Services[i.Type]
+            if serviceDef then
+                local args = {}
+                for _, argName in next, serviceDef.Args do
+                    table.insert(args, i[argName])
+                end
+                
+                local serviceInstance = serviceDef.New(table.unpack(args))
+                serviceInstance.Type = i.Type
+                table.insert(Services, serviceInstance)
+                
+                local IconFrame = Creator.Image(
+                    i.Icon or serviceDef.Icon or Icons[i.Type] or "user",
+                    i.Icon or serviceDef.Icon or Icons[i.Type] or "user",
+                    0,
+                    "Temp",
+                    "KeySystem",
+                    true
+                )
+                IconFrame.Size = UDim2.new(0, 24, 0, 24)
+                
+                local APIFrame = Creator.NewRoundFrame(10, "Squircle", {
+                    Size = UDim2.new(1, 0, 0, 0),
+                    ThemeTag = { ImageColor3 = "Text" },
+                    ImageTransparency = 1,
+                    Parent = DropdownFrame,
+                    AutomaticSize = "Y",
+                }, {
+                    New("UIListLayout", {
+                        FillDirection = "Horizontal",
+                        Padding = UDim.new(0, 10),
+                        VerticalAlignment = "Center",
+                    }),
+                    IconFrame,
+                    New("UIPadding", {
+                        PaddingTop = UDim.new(0, 10),
+                        PaddingLeft = UDim.new(0, 10),
+                        PaddingRight = UDim.new(0, 10),
+                        PaddingBottom = UDim.new(0, 10),
+                    }),
+                    New("Frame", {
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(1, -24 - 10, 0, 0),
+                        AutomaticSize = "Y",
+                    }, {
+                        New("UIListLayout", {
+                            FillDirection = "Vertical",
+                            Padding = UDim.new(0, 5),
+                            HorizontalAlignment = "Center",
+                        }),
+                        New("TextLabel", {
+                            Text = i.Title or serviceDef.Name,
+                            BackgroundTransparency = 1,
+                            FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
+                            ThemeTag = { TextColor3 = "Text" },
+                            TextTransparency = 0.05,
+                            TextSize = 18,
+                            Size = UDim2.new(1, 0, 0, 0),
+                            AutomaticSize = "Y",
+                            TextWrapped = true,
+                            TextXAlignment = "Left",
+                        }),
+                        New("TextLabel", {
+                            Text = i.Desc or "",
+                            BackgroundTransparency = 1,
+                            FontFace = Font.new(Creator.Font, Enum.FontWeight.Regular),
+                            ThemeTag = { TextColor3 = "Text" },
+                            TextTransparency = 0.2,
+                            TextSize = 16,
+                            Size = UDim2.new(1, 0, 0, 0),
+                            AutomaticSize = "Y",
+                            TextWrapped = true,
+                            Visible = i.Desc and true or false,
+                            TextXAlignment = "Left",
+                        })
+                    })
+                }, true)
+        
+                Creator.AddSignal(APIFrame.MouseEnter, function()
+                    Tween(APIFrame, 0.08, { ImageTransparency = .95 }):Play()
+                end)
+                Creator.AddSignal(APIFrame.InputEnded, function()
+                    Tween(APIFrame, 0.08, { ImageTransparency = 1 }):Play()
+                end)
+                Creator.AddSignal(APIFrame.MouseButton1Click, function()
+                    serviceInstance.Copy()
+                    Config.WindUI:Notify({
+                        Title = "Key System",
+                        Content = "Key link copied to clipboard.",
+                        Image = "key",
+                    })
+                end)
+            end
         end
         
-        if isKey then
-            KeyDialog:Close()()
-            
-            if Config.KeySystem.SaveKey then
-                local folder = Config.Folder or Config.Title
-                writefile(folder .. "/" .. Filename .. ".key", tostring(Key))
+        Creator.AddSignal(ButtonFrame.MouseButton1Click, function()  
+            if not Opened then  
+                Tween(DropdownContainer, .3, { Size = UDim2.new(0, Width, 0, DropdownFrame.AbsoluteSize.Y + 1)  }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()  
+                Tween(ChevronDown, .3, { Rotation = 180 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()  
+            else  
+                Tween(DropdownContainer, .25, { Size = UDim2.new(0, Width, 0, 0)  }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()  
+                Tween(ChevronDown, .25, { Rotation = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()  
+            end  
+            Opened = not Opened  
+        end)
+
+    end
+    
+    local function handleSuccess(key)
+        KeyDialog:Close()()
+        writefile((Config.Folder or Config.Title) .. "/" .. Filename .. ".key", tostring(key))
+        task.wait(.4)
+        func(true)
+    end
+    
+    local SubmitButton = CreateButton("Submit", "arrow-right", function()
+        local key = tostring(EnteredKey or "empty")
+        local folder = Config.Folder or Config.Title
+    
+        if not Config.KeySystem.API then
+            local isKey = type(Config.KeySystem.Key) == "table"
+                and table.find(Config.KeySystem.Key, key)
+                or Config.KeySystem.Key == key
+    
+            if isKey then
+                if Config.KeySystem.SaveKey then
+                    handleSuccess(key)
+                else
+                    KeyDialog:Close()()
+                    task.wait(.4)
+                    func(true)
+                end
             end
-            
-            task.wait(.4)
-            func(true)
+        else
+            local isSuccess, result
+            for _, service in next, Services do
+                local success, res = service.Verify(key)
+                if success then
+                    isSuccess, result = true, res
+                    break
+                end
+                result = res
+            end
+    
+            if isSuccess then
+                handleSuccess(key)
+            else
+                Config.WindUI:Notify({
+                    Title = "Key System. Error",
+                    Content = result,
+                    Icon = "triangle-alert",
+                })
+            end
         end
     end, "Primary", ButtonsContainer)
     

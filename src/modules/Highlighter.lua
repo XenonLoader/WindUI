@@ -109,7 +109,7 @@ function highlighter.run(source)
 				
 				inComment = false
 			elseif source:sub(i - 1, i) == "]]" and commentPersist then
-				currentToken ..= "]"
+				currentToken = currentToken .. "]"
 				
 				table.insert(tokens, currentToken)
 				currentToken = ""
