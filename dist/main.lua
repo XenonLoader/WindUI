@@ -3595,18 +3595,18 @@ end
 
 function ac.Init(ad,ae)
 if not ae.Folder then
-warn"[ WindUI.ConfigManager ] Window.Folder is not specified."
+warn"[ Avantrix.ConfigManager ] Window.Folder is not specified."
 return false
 end
 
 ab=ae
 ac.Folder=ab.Folder
-ac.Path="WindUI/"..tostring(ac.Folder).."/config/"
+ac.Path="Avantrix/"..tostring(ac.Folder).."/config/"
 
-if not isfolder("WindUI/"..ac.Folder)then
-makefolder("WindUI/"..ac.Folder)
-if not isfolder("WindUI/"..ac.Folder.."/config/")then
-makefolder("WindUI/"..ac.Folder.."/config/")
+if not isfolder("Avantrix/"..ac.Folder)then
+makefolder("Avantrix/"..ac.Folder)
+if not isfolder("Avantrix/"..ac.Folder.."/config/")then
+makefolder("Avantrix/"..ac.Folder.."/config/")
 end
 end
 
@@ -3673,7 +3673,7 @@ return false,"Config file does not exist"
 end
 
 local ah,ai=pcall(function()
-local ah=readfile or function()warn"[ WindUI.ConfigManager ] The config system doesn't work in the studio."return nil end
+local ah=readfile or function()warn"[ Avantrix.ConfigManager ] The config system doesn't work in the studio."return nil end
 return aa:JSONDecode(ah(af.Path))
 end)
 
