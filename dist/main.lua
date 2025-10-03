@@ -8010,19 +8010,37 @@ function at.Highlight(av)
 au:Highlight()
 end
 function at.Destroy(av)
+for aw,ax in ipairs(ai.AllElements)do
+if ax==at then
+table.remove(ai.AllElements,aw)
+break
+end
+end
 
-table.remove(ai.AllElements,ar.GlobalIndex)
-table.remove(ac.Elements,ar.Index)
-table.remove(an.Elements,ar.Index)
+for aw,ax in ipairs(ac.Elements)do
+if ax==at then
+table.remove(ac.Elements,aw)
+break
+end
+end
+
+if an then
+for aw,ax in ipairs(an.Elements)do
+if ax==at then
+table.remove(an.Elements,aw)
+break
+end
+end
+end
+
 ac:UpdateAllElementShapes(ac)
-
 au:Destroy()
 end
 end
 
 
 
-ai.AllElements[ar.Index]=at
+ai.AllElements[ar.GlobalIndex]=at
 ac.Elements[ar.Index]=at
 if an then an.Elements[ar.Index]=at end
 

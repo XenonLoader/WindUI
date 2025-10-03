@@ -51,19 +51,37 @@ return {
                         frame:Highlight()
                     end
                     function content:Destroy()
-                        
-                        table.remove(Window.AllElements, config.GlobalIndex)
-                        table.remove(tbl.Elements, config.Index)
-                        table.remove(Tab.Elements, config.Index)
+                        for i, elem in ipairs(Window.AllElements) do
+                            if elem == content then
+                                table.remove(Window.AllElements, i)
+                                break
+                            end
+                        end
+
+                        for i, elem in ipairs(tbl.Elements) do
+                            if elem == content then
+                                table.remove(tbl.Elements, i)
+                                break
+                            end
+                        end
+
+                        if Tab then
+                            for i, elem in ipairs(Tab.Elements) do
+                                if elem == content then
+                                    table.remove(Tab.Elements, i)
+                                    break
+                                end
+                            end
+                        end
+
                         tbl:UpdateAllElementShapes(tbl)
-                    
                         frame:Destroy()
                     end
                 end
                 
-                
-                
-                Window.AllElements[config.Index] = content
+
+
+                Window.AllElements[config.GlobalIndex] = content
                 tbl.Elements[config.Index] =  content
                 if Tab then Tab.Elements[config.Index] =  content end
                 
