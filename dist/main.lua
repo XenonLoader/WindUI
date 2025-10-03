@@ -3627,11 +3627,29 @@ local af={
 Path=ac.Path..ae..".json",
 Elements={},
 CustomData={},
-Version=1.1
+Version=1.2,
+AutoRegisterEnabled=true
 }
 
 if not ae then
 return false,"No config file is selected"
+end
+
+function af.AutoRegisterElements(ag)
+if not ab then return end
+
+af.Elements={}
+
+if ab.AllElements then
+for ah,ai in ipairs(ab.AllElements)do
+if ai and ai.__type then
+local aj=ai.Title or("Element_"..ah)
+aj=aj:gsub("[^%w_]","_")
+
+af.Elements[aj]=ai
+end
+end
+end
 end
 
 function af.Register(ag,ah,ai)
@@ -3647,6 +3665,10 @@ return af.CustomData[ah]
 end
 
 function af.Save(ag)
+if af.AutoRegisterEnabled then
+af:AutoRegisterElements()
+end
+
 local ah={
 __version=af.Version,
 __elements={},
@@ -3690,11 +3712,29 @@ __custom={}
 ai=aj
 end
 
+if af.AutoRegisterEnabled then
+af:AutoRegisterElements()
+end
+
 for aj,ak in next,(ai.__elements or{})do
 if af.Elements[aj]and ac.Parser[ak.__type]then
 task.spawn(function()
 ac.Parser[ak.__type].Load(af.Elements[aj],ak)
 end)
+else
+for al,am in next,af.Elements do
+if am.__type==ak.__type then
+local an=ak.value and type(ak.value)=="table"and ak.value.Title or nil
+local ao=am.Title
+
+if ao and an and ao==an then
+task.spawn(function()
+ac.Parser[ak.__type].Load(am,ak)
+end)
+break
+end
+end
+end
 end
 end
 

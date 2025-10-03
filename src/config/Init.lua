@@ -126,11 +126,29 @@ function ConfigManager:CreateConfig(configFilename)
         Path = ConfigManager.Path .. configFilename .. ".json",
         Elements = {},
         CustomData = {},
-        Version = 1.1 -- Current config version
+        Version = 1.2,
+        AutoRegisterEnabled = true
     }
-    
+
     if not configFilename then
         return false, "No config file is selected"
+    end
+
+    function ConfigModule:AutoRegisterElements()
+        if not Window then return end
+
+        ConfigModule.Elements = {}
+
+        if Window.AllElements then
+            for i, element in ipairs(Window.AllElements) do
+                if element and element.__type then
+                    local elementName = element.Title or ("Element_" .. i)
+                    elementName = elementName:gsub("[^%w_]", "_")
+
+                    ConfigModule.Elements[elementName] = element
+                end
+            end
+        end
     end
 
     function ConfigModule:Register(Name, Element)
@@ -146,40 +164,44 @@ function ConfigManager:CreateConfig(configFilename)
     end
     
     function ConfigModule:Save()
+        if ConfigModule.AutoRegisterEnabled then
+            ConfigModule:AutoRegisterElements()
+        end
+
         local saveData = {
             __version = ConfigModule.Version,
             __elements = {},
             __custom = ConfigModule.CustomData
         }
-        
+
         for name, element in next, ConfigModule.Elements do
             if ConfigManager.Parser[element.__type] then
                 saveData.__elements[tostring(name)] = ConfigManager.Parser[element.__type].Save(element)
             end
         end
-        
+
         local jsonData = HttpService:JSONEncode(saveData)
-        if writefile then 
+        if writefile then
             writefile(ConfigModule.Path, jsonData)
         end
-        
+
         return saveData
     end
     
     function ConfigModule:Load()
-        if isfile and not isfile(ConfigModule.Path) then 
-            return false, "Config file does not exist" 
+        if isfile and not isfile(ConfigModule.Path) then
+            return false, "Config file does not exist"
         end
-        
+
         local success, loadData = pcall(function()
             local readfile = readfile or function() warn("[ Avantrix.ConfigManager ] The config system doesn't work in the studio.") return nil end
             return HttpService:JSONDecode(readfile(ConfigModule.Path))
         end)
-        
+
         if not success then
             return false, "Failed to parse config file"
         end
-        
+
         if not loadData.__version then
             local migratedData = {
                 __version = ConfigModule.Version,
@@ -188,17 +210,35 @@ function ConfigManager:CreateConfig(configFilename)
             }
             loadData = migratedData
         end
-        
+
+        if ConfigModule.AutoRegisterEnabled then
+            ConfigModule:AutoRegisterElements()
+        end
+
         for name, data in next, (loadData.__elements or {}) do
             if ConfigModule.Elements[name] and ConfigManager.Parser[data.__type] then
                 task.spawn(function()
                     ConfigManager.Parser[data.__type].Load(ConfigModule.Elements[name], data)
                 end)
+            else
+                for elementName, element in next, ConfigModule.Elements do
+                    if element.__type == data.__type then
+                        local savedTitle = data.value and type(data.value) == "table" and data.value.Title or nil
+                        local elementTitle = element.Title
+
+                        if elementTitle and savedTitle and elementTitle == savedTitle then
+                            task.spawn(function()
+                                ConfigManager.Parser[data.__type].Load(element, data)
+                            end)
+                            break
+                        end
+                    end
+                end
             end
         end
-        
+
         ConfigModule.CustomData = loadData.__custom or {}
-        
+
         return ConfigModule.CustomData
     end
     
