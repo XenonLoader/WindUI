@@ -1,18 +1,10 @@
--- credits: dawid, extended functionality
 local HttpService = game:GetService("HttpService")
 
-local Window 
-
-local ConfigManager
-ConfigManager = {
-    --Window = nil,
+local ConfigManager = {
     Folder = nil,
     Path = nil,
     Configs = {},
-    ExcludedTitles = {
-        ["Select Config"] = true,
-        ["Config Name"] = true,
-    },
+    ExcludedTitles = {},
     Parser = {
         Colorpicker = {
             Save = function(obj)
@@ -25,8 +17,7 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Update(Color3.fromHex(data.value), data.transparency or nil)
-                    
-                    -- Trigger callback if exists
+
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
@@ -50,17 +41,14 @@ ConfigManager = {
                     local isMulti = data.multi or element.Multi
 
                     if isMulti and type(value) == "table" then
-                        -- DISABLE callback sementara
                         local originalCallback = element.Callback
                         element.Callback = function() end
 
-                        -- Clear semua seleksi dulu
                         element.Value = {}
                         element:Display()
 
                         task.wait(0.1)
 
-                        -- Select semua item dari saved value
                         for _, item in ipairs(value) do
                             local found = false
                             for _, existing in ipairs(element.Value) do
@@ -74,10 +62,8 @@ ConfigManager = {
                             end
                         end
 
-                        -- Update display
                         element:Display()
 
-                        -- RESTORE callback dan trigger sekali dengan full array
                         task.wait(0.1)
                         element.Callback = originalCallback
 
@@ -87,7 +73,6 @@ ConfigManager = {
                             end)
                         end
                     else
-                        -- Single Dropdown
                         local singleValue = value
                         if type(value) == "table" and #value > 0 then
                             singleValue = value[1]
@@ -115,8 +100,7 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Set(data.value)
-                    
-                    -- Trigger callback if exists
+
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
@@ -136,8 +120,7 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Set(data.value)
-                    
-                    -- Trigger callback if exists
+
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
@@ -157,8 +140,7 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Set(data.value)
-                    
-                    -- Trigger callback if exists
+
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
@@ -178,8 +160,7 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Set(data.value)
-                    
-                    -- Trigger callback if exists
+
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
@@ -194,30 +175,28 @@ ConfigManager = {
 
 function ConfigManager:Init(WindowTable)
     if not WindowTable.Folder then
-        warn("[ Avantrix.ConfigManager ] Window.Folder is not specified.")
+        warn("[ ConfigManager ] Window.Folder is not specified.")
         return false
     end
-    
-    Window = WindowTable
-    ConfigManager.Folder = Window.Folder
+
+    ConfigManager.Folder = WindowTable.Folder
     ConfigManager.Path = "Avantrix/" .. tostring(ConfigManager.Folder) .. "/config/"
-    
+
     if not isfolder("Avantrix/" .. ConfigManager.Folder) then
         makefolder("Avantrix/" .. ConfigManager.Folder)
         if not isfolder("Avantrix/" .. ConfigManager.Folder .. "/config/") then
             makefolder("Avantrix/" .. ConfigManager.Folder .. "/config/")
         end
     end
-    
+
     local files = ConfigManager:AllConfigs()
-    
+
     for _, f in next, files do
         if isfile and readfile and isfile(f .. ".json") then
             ConfigManager.Configs[f] = readfile(f .. ".json")
         end
     end
 
-    
     return ConfigManager
 end
 
@@ -235,18 +214,17 @@ function ConfigManager:CreateConfig(configFilename)
     end
 
     function ConfigModule:AutoRegisterElements()
-        if not Window then return end
+        if not self.Window then return end
 
         ConfigModule.Elements = {}
 
-        if Window.AllElements then
-            for i, element in ipairs(Window.AllElements) do
+        if self.Window.AllElements then
+            for i, element in ipairs(self.Window.AllElements) do
                 if element and element.__type then
-                    -- SKIP excluded elements (config UI elements)
                     if element.Title and ConfigManager.ExcludedTitles[element.Title] then
                         continue
                     end
-                    
+
                     local elementName = element.Title or ("Element_" .. i)
                     elementName = elementName:gsub("[^%w_]", "_")
 
@@ -259,17 +237,17 @@ function ConfigManager:CreateConfig(configFilename)
     function ConfigModule:Register(Name, Element)
         ConfigModule.Elements[Name] = Element
     end
-    
+
     function ConfigModule:Set(key, value)
         ConfigModule.CustomData[key] = value
     end
-    
+
     function ConfigModule:Get(key)
         return ConfigModule.CustomData[key]
     end
-    
+
     function ConfigModule:Save()
-        if ConfigModule.AutoRegisterEnabled then
+        if ConfigModule.AutoRegisterEnabled and ConfigModule.Window then
             ConfigModule:AutoRegisterElements()
         end
 
@@ -292,14 +270,14 @@ function ConfigManager:CreateConfig(configFilename)
 
         return saveData
     end
-    
+
     function ConfigModule:Load()
         if isfile and not isfile(ConfigModule.Path) then
             return false, "Config file does not exist"
         end
 
         local success, loadData = pcall(function()
-            local readfile = readfile or function() warn("[ Avantrix.ConfigManager ] The config system doesn't work in the studio.") return nil end
+            local readfile = readfile or function() warn("[ ConfigManager ] The config system doesn't work in the studio.") return nil end
             return HttpService:JSONDecode(readfile(ConfigModule.Path))
         end)
 
@@ -316,12 +294,16 @@ function ConfigManager:CreateConfig(configFilename)
             loadData = migratedData
         end
 
-        if ConfigModule.AutoRegisterEnabled then
+        if ConfigModule.AutoRegisterEnabled and ConfigModule.Window then
             ConfigModule:AutoRegisterElements()
         end
 
         for name, data in next, (loadData.__elements or {}) do
-            if ConfigModule.Elements[name] and ConfigManager.Parser[data.__type] then
+            if not ConfigModule.Elements[name] then
+                continue
+            end
+
+            if ConfigManager.Parser[data.__type] then
                 task.spawn(function()
                     ConfigManager.Parser[data.__type].Load(ConfigModule.Elements[name], data)
                 end)
@@ -346,39 +328,44 @@ function ConfigManager:CreateConfig(configFilename)
 
         return ConfigModule.CustomData
     end
-    
+
     function ConfigModule:GetData()
         return {
             elements = ConfigModule.Elements,
             custom = ConfigModule.CustomData
         }
     end
-    
+
+    ConfigModule.Window = ConfigManager.Window
     ConfigManager.Configs[configFilename] = ConfigModule
     return ConfigModule
 end
 
 function ConfigManager:AllConfigs()
     if not listfiles then return {} end
-    
+
     local files = {}
     if not isfolder(ConfigManager.Path) then
         makefolder(ConfigManager.Path)
         return files
     end
-    
+
     for _, file in next, listfiles(ConfigManager.Path) do
         local name = file:match("([^\\/]+)%.json$")
         if name then
             table.insert(files, name)
         end
     end
-    
+
     return files
 end
 
 function ConfigManager:GetConfig(configName)
     return ConfigManager.Configs[configName]
+end
+
+function ConfigManager:SetWindow(WindowTable)
+    ConfigManager.Window = WindowTable
 end
 
 return ConfigManager
