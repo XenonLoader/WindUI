@@ -1,341 +1,367 @@
-local WindUI = {
-    Window = nil,
-    Theme = nil,
-    Creator = require("./modules/Creator"),
-    LocalizationModule = require("./modules/Localization"),
-    NotificationModule = require("./components/Notification"),
-    Themes = nil,
-    Transparent = false,
-    
-    TransparencyValue = .15,
-    
-    UIScale = 1,
-    
-    --ConfigManager = nil,
-    Version = "0.0.0",
-    
-    Services = require("./utils/services/Init"),
-    
-    OnThemeChangeFunction = nil,
-}
-
-
+-- credits: dawid, extended functionality
 local HttpService = game:GetService("HttpService")
 
+local Window 
 
-local Package = HttpService:JSONDecode(require("../build/package"))
-if Package then
-    WindUI.Version = Package.version
-end
+local ConfigManager
+ConfigManager = {
+    --Window = nil,
+    Folder = nil,
+    Path = nil,
+    Configs = {},
+    ExcludedTitles = {
+        ["Select Config"] = true,
+        ["Config Name"] = true,
+    },
+    Parser = {
+        Colorpicker = {
+            Save = function(obj)
+                return {
+                    __type = obj.__type,
+                    value = obj.Default:ToHex(),
+                    transparency = obj.Transparency or nil,
+                }
+            end,
+            Load = function(element, data)
+                if element then
+                    element:Update(Color3.fromHex(data.value), data.transparency or nil)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(Color3.fromHex(data.value), data.transparency)
+                        end
+                    end)
+                end
+            end
+        },
+        Dropdown = {
+            Save = function(obj)
+                return {
+                    __type = obj.__type,
+                    value = obj.Value,
+                    multi = obj.Multi or false,
+                }
+            end,
+            Load = function(element, data)
+                if element then
+                    local value = data.value
 
-local KeySystem = require("./components/KeySystem")
+                    -- Detect if this is a multi dropdown
+                    local isMulti = data.multi or element.Multi or (type(value) == "table" and #value > 1)
 
-local ServicesModule = WindUI.Services
+                    if isMulti and type(value) == "table" then
+                        -- Multi Dropdown: Clear all first, then select each item
+                        element:Select({})
+                        task.wait(0.05)
 
-local Creator = WindUI.Creator
+                        -- Select each item individually
+                        for _, item in ipairs(value) do
+                            element:Select(item)
+                            task.wait(0.02)
+                        end
 
-local New = Creator.New
-local Tween = Creator.Tween
+                        -- Trigger callback with full array
+                        task.spawn(function()
+                            task.wait(0.1)
+                            if element.Callback then
+                                element.Callback(value)
+                            end
+                        end)
+                    else
+                        -- Single Dropdown
+                        local singleValue = value
+                        if type(value) == "table" and #value > 0 then
+                            singleValue = value[1]
+                        end
 
+                        element:Select(singleValue)
 
-local Acrylic = require("./utils/Acrylic/Init")
+                        task.spawn(function()
+                            task.wait(0.1)
+                            if element.Callback then
+                                element.Callback(singleValue)
+                            end
+                        end)
+                    end
+                end
+            end
+        },
+        Input = {
+            Save = function(obj)
+                return {
+                    __type = obj.__type,
+                    value = obj.Value,
+                }
+            end,
+            Load = function(element, data)
+                if element then
+                    element:Set(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(data.value)
+                        end
+                    end)
+                end
+            end
+        },
+        Keybind = {
+            Save = function(obj)
+                return {
+                    __type = obj.__type,
+                    value = obj.Value,
+                }
+            end,
+            Load = function(element, data)
+                if element then
+                    element:Set(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(data.value)
+                        end
+                    end)
+                end
+            end
+        },
+        Slider = {
+            Save = function(obj)
+                return {
+                    __type = obj.__type,
+                    value = obj.Value.Default,
+                }
+            end,
+            Load = function(element, data)
+                if element then
+                    element:Set(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(data.value)
+                        end
+                    end)
+                end
+            end
+        },
+        Toggle = {
+            Save = function(obj)
+                return {
+                    __type = obj.__type,
+                    value = obj.Value,
+                }
+            end,
+            Load = function(element, data)
+                if element then
+                    element:Set(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(data.value)
+                        end
+                    end)
+                end
+            end
+        },
+    }
+}
 
-local LocalPlayer = game:GetService("Players") and game:GetService("Players").LocalPlayer or nil
-
-local ProtectGui = protectgui or (syn and syn.protect_gui) or function() end
-
-local GUIParent = gethui and gethui() or (game.CoreGui or game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-
-
-WindUI.ScreenGui = New("ScreenGui", {
-    Name = "WindUI",
-    Parent = GUIParent,
-    IgnoreGuiInset = true,
-    ScreenInsets = "None",
-}, {
-    New("UIScale", {
-        Scale = WindUI.Scale,
-    }),
-    New("Folder", {
-        Name = "Window"
-    }),
-    -- New("Folder", {
-    --     Name = "Notifications"
-    -- }),
-    -- New("Folder", {
-    --     Name = "Dropdowns"
-    -- }),
-    New("Folder", {
-        Name = "KeySystem"
-    }),
-    New("Folder", {
-        Name = "Popups"
-    }),
-    New("Folder", {
-        Name = "ToolTips"
-    })
-})
-
-WindUI.NotificationGui = New("ScreenGui", {
-    Name = "WindUI/Notifications",
-    Parent = GUIParent,
-    IgnoreGuiInset = true,
-})
-WindUI.DropdownGui = New("ScreenGui", {
-    Name = "WindUI/Dropdowns",
-    Parent = GUIParent,
-    IgnoreGuiInset = true,
-})
-ProtectGui(WindUI.ScreenGui)
-ProtectGui(WindUI.NotificationGui)
-ProtectGui(WindUI.DropdownGui)
-
-Creator.Init(WindUI)
-
-math.clamp(WindUI.TransparencyValue, 0, 1)
-
-local Holder = WindUI.NotificationModule.Init(WindUI.NotificationGui)
-
-function WindUI:Notify(Config)
-    Config.Holder = Holder.Frame
-    Config.Window = WindUI.Window
-    --Config.WindUI = WindUI
-    return WindUI.NotificationModule.New(Config)
-end
-
-function WindUI:SetNotificationLower(Val)
-    Holder.SetLower(Val)
-end
-
-function WindUI:SetFont(FontId)
-    Creator.UpdateFont(FontId)
-end
-
-function WindUI:OnThemeChange(func)
-    WindUI.OnThemeChangeFunction = func
-end
-
-function WindUI:AddTheme(LTheme)
-    WindUI.Themes[LTheme.Name] = LTheme
-    return LTheme
-end
-
-function WindUI:SetTheme(Value)
-    if WindUI.Themes[Value] then
-        WindUI.Theme = WindUI.Themes[Value]
-        Creator.SetTheme(WindUI.Themes[Value])
-        
-        if WindUI.OnThemeChangeFunction then
-            WindUI.OnThemeChangeFunction(Value)
+function ConfigManager:Init(WindowTable)
+    if not WindowTable.Folder then
+        warn("[ Avantrix.ConfigManager ] Window.Folder is not specified.")
+        return false
+    end
+    
+    Window = WindowTable
+    ConfigManager.Folder = Window.Folder
+    ConfigManager.Path = "Avantrix/" .. tostring(ConfigManager.Folder) .. "/config/"
+    
+    if not isfolder("Avantrix/" .. ConfigManager.Folder) then
+        makefolder("Avantrix/" .. ConfigManager.Folder)
+        if not isfolder("Avantrix/" .. ConfigManager.Folder .. "/config/") then
+            makefolder("Avantrix/" .. ConfigManager.Folder .. "/config/")
         end
-        --Creator.UpdateTheme()
-        
-        return WindUI.Themes[Value]
     end
-    return nil
-end
-
-function WindUI:GetThemes()
-    return WindUI.Themes
-end
-function WindUI:GetCurrentTheme()
-    return WindUI.Theme.Name
-end
-function WindUI:GetTransparency()
-    return WindUI.Transparent or false
-end
-function WindUI:GetWindowSize()
-    return Window.UIElements.Main.Size
-end
-function WindUI:Localization(LocalizationConfig)
-    return WindUI.LocalizationModule:New(LocalizationConfig, Creator)
-end
-
-function WindUI:SetLanguage(Value)
-    if Creator.Localization then
-        return Creator.SetLanguage(Value)
-    end
-    return false
-end
-
-function WindUI:ToggleAcrylic(Value)
-	if WindUI.Window and WindUI.Window.AcrylicPaint and WindUI.Window.AcrylicPaint.Model then
-		WindUI.Window.Acrylic = Value
-		WindUI.Window.AcrylicPaint.Model.Transparency = Value and 0.98 or 1
-		if Value then
-			Acrylic.Enable()
-		else
-			Acrylic.Disable()
-		end
-	end
-end
-
-
-
-function WindUI:Gradient(stops, props)
-    local colorSequence = {}
-    local transparencySequence = {}
-
-    for posStr, stop in next, stops do
-        local position = tonumber(posStr)
-        if position then
-            position = math.clamp(position / 100, 0, 1)
-            table.insert(colorSequence, ColorSequenceKeypoint.new(position, stop.Color))
-            table.insert(transparencySequence, NumberSequenceKeypoint.new(position, stop.Transparency or 0))
+    
+    local files = ConfigManager:AllConfigs()
+    
+    for _, f in next, files do
+        if isfile and readfile and isfile(f .. ".json") then
+            ConfigManager.Configs[f] = readfile(f .. ".json")
         end
     end
 
-    table.sort(colorSequence, function(a, b) return a.Time < b.Time end)
-    table.sort(transparencySequence, function(a, b) return a.Time < b.Time end)
+    
+    return ConfigManager
+end
 
-
-    if #colorSequence < 2 then
-        error("ColorSequence requires at least 2 keypoints")
-    end
-
-
-    local gradientData = {
-        Color = ColorSequence.new(colorSequence),
-        Transparency = NumberSequence.new(transparencySequence),
+function ConfigManager:CreateConfig(configFilename)
+    local ConfigModule = {
+        Path = ConfigManager.Path .. configFilename .. ".json",
+        Elements = {},
+        CustomData = {},
+        Version = 1.2,
+        AutoRegisterEnabled = true
     }
 
-    if props then
-        for k, v in pairs(props) do
-            gradientData[k] = v
-        end
+    if not configFilename then
+        return false, "No config file is selected"
     end
 
-    return gradientData
-end
+    function ConfigModule:AutoRegisterElements()
+        if not Window then return end
 
+        ConfigModule.Elements = {}
 
-function WindUI:Popup(PopupConfig)
-    PopupConfig.WindUI = WindUI
-    return require("./components/popup/Init").new(PopupConfig)
-end
+        if Window.AllElements then
+            for i, element in ipairs(Window.AllElements) do
+                if element and element.__type then
+                    -- SKIP excluded elements (config UI elements)
+                    if element.Title and ConfigManager.ExcludedTitles[element.Title] then
+                        continue
+                    end
+                    
+                    local elementName = element.Title or ("Element_" .. i)
+                    elementName = elementName:gsub("[^%w_]", "_")
 
-
-WindUI.Themes = require("./themes/init")(WindUI)
-
-Creator.Themes = WindUI.Themes
-
-
-WindUI:SetTheme("Dark")
-WindUI:SetLanguage(Creator.Language)
-
-
-function WindUI:CreateWindow(Config)
-    local CreateWindow = require("./components/window/Init")
-    
-    if not isfolder("WindUI") then
-        makefolder("WindUI")
-    end
-    if Config.Folder then
-        makefolder(Config.Folder)
-    else
-        makefolder(Config.Title)
-    end
-    
-    Config.WindUI = WindUI
-    Config.Parent = WindUI.ScreenGui.Window
-    
-    if WindUI.Window then
-        warn("You cannot create more than one window")
-        return
-    end
-    
-    local CanLoadWindow = true
-    
-    local Theme = WindUI.Themes[Config.Theme or "Dark"]
-    
-    --WindUI.Theme = Theme
-    Creator.SetTheme(Theme)
-    
-    
-    local hwid = gethwid or function()
-        return game:GetService("Players").LocalPlayer.UserId
-    end
-    
-    local Filename = hwid()
-    
-    if Config.KeySystem then
-        CanLoadWindow = false
-    
-        local function loadKeysystem()
-            KeySystem.new(Config, Filename, function(c) CanLoadWindow = c end)
-        end
-    
-        local keyPath = Config.Folder .. "/" .. Filename .. ".key"
-    
-        if not Config.KeySystem.API then
-            if Config.KeySystem.SaveKey and isfile(keyPath) then
-                local savedKey = readfile(keyPath)
-                local isKey = (type(Config.KeySystem.Key) == "table")
-                    and table.find(Config.KeySystem.Key, savedKey)
-                    or tostring(Config.KeySystem.Key) == tostring(savedKey)
-    
-                if isKey then
-                    CanLoadWindow = true
-                else
-                    loadKeysystem()
+                    ConfigModule.Elements[elementName] = element
                 end
-            else
-                loadKeysystem()
             end
-        else
-            if isfile(keyPath) then
-                local fileKey = readfile(keyPath)
-                local isSuccess = false
+        end
+    end
+
+    function ConfigModule:Register(Name, Element)
+        ConfigModule.Elements[Name] = Element
+    end
     
-                for _, i in next, Config.KeySystem.API do
-                    local serviceData = WindUI.Services[i.Type]
-                    if serviceData then
-                        local args = {}
-                        for _, argName in next, serviceData.Args do
-                            table.insert(args, i[argName])
-                        end
+    function ConfigModule:Set(key, value)
+        ConfigModule.CustomData[key] = value
+    end
     
-                        local service = serviceData.New(table.unpack(args))
-                        local success = service.Verify(fileKey)
-                        if success then
-                            isSuccess = true
+    function ConfigModule:Get(key)
+        return ConfigModule.CustomData[key]
+    end
+    
+    function ConfigModule:Save()
+        if ConfigModule.AutoRegisterEnabled then
+            ConfigModule:AutoRegisterElements()
+        end
+
+        local saveData = {
+            __version = ConfigModule.Version,
+            __elements = {},
+            __custom = ConfigModule.CustomData
+        }
+
+        for name, element in next, ConfigModule.Elements do
+            if ConfigManager.Parser[element.__type] then
+                saveData.__elements[tostring(name)] = ConfigManager.Parser[element.__type].Save(element)
+            end
+        end
+
+        local jsonData = HttpService:JSONEncode(saveData)
+        if writefile then
+            writefile(ConfigModule.Path, jsonData)
+        end
+
+        return saveData
+    end
+    
+    function ConfigModule:Load()
+        if isfile and not isfile(ConfigModule.Path) then
+            return false, "Config file does not exist"
+        end
+
+        local success, loadData = pcall(function()
+            local readfile = readfile or function() warn("[ Avantrix.ConfigManager ] The config system doesn't work in the studio.") return nil end
+            return HttpService:JSONDecode(readfile(ConfigModule.Path))
+        end)
+
+        if not success then
+            return false, "Failed to parse config file"
+        end
+
+        if not loadData.__version then
+            local migratedData = {
+                __version = ConfigModule.Version,
+                __elements = loadData,
+                __custom = {}
+            }
+            loadData = migratedData
+        end
+
+        if ConfigModule.AutoRegisterEnabled then
+            ConfigModule:AutoRegisterElements()
+        end
+
+        for name, data in next, (loadData.__elements or {}) do
+            if ConfigModule.Elements[name] and ConfigManager.Parser[data.__type] then
+                task.spawn(function()
+                    ConfigManager.Parser[data.__type].Load(ConfigModule.Elements[name], data)
+                end)
+            else
+                for elementName, element in next, ConfigModule.Elements do
+                    if element.__type == data.__type then
+                        local savedTitle = data.value and type(data.value) == "table" and data.value.Title or nil
+                        local elementTitle = element.Title
+
+                        if elementTitle and savedTitle and elementTitle == savedTitle then
+                            task.spawn(function()
+                                ConfigManager.Parser[data.__type].Load(element, data)
+                            end)
                             break
                         end
                     end
                 end
-    
-                CanLoadWindow = isSuccess
-                if not isSuccess then loadKeysystem() end
-            else
-                loadKeysystem()
             end
         end
-    
-        repeat task.wait() until CanLoadWindow
-    end
 
-    local Window = CreateWindow(Config)
+        ConfigModule.CustomData = loadData.__custom or {}
 
-    WindUI.Transparent = Config.Transparent
-    WindUI.Window = Window
-    
-    if Config.Acrylic then
-        Acrylic.init()
+        return ConfigModule.CustomData
     end
     
-    -- function Window:ToggleTransparency(Value)
-    --     WindUI.Transparent = Value
-    --     WindUI.Window.Transparent = Value
-        
-    --     Window.UIElements.Main.Background.BackgroundTransparency = Value and WindUI.TransparencyValue or 0
-    --     Window.UIElements.Main.Background.ImageLabel.ImageTransparency = Value and WindUI.TransparencyValue or 0
-    --     Window.UIElements.Main.Gradient.UIGradient.Transparency = NumberSequence.new{
-    --         NumberSequenceKeypoint.new(0, 1), 
-    --         NumberSequenceKeypoint.new(1, Value and 0.85 or 0.7),
-    --     }
-    -- end
+    function ConfigModule:GetData()
+        return {
+            elements = ConfigModule.Elements,
+            custom = ConfigModule.CustomData
+        }
+    end
     
-    return Window
+    ConfigManager.Configs[configFilename] = ConfigModule
+    return ConfigModule
 end
 
-return WindUI
+function ConfigManager:AllConfigs()
+    if not listfiles then return {} end
+    
+    local files = {}
+    if not isfolder(ConfigManager.Path) then
+        makefolder(ConfigManager.Path)
+        return files
+    end
+    
+    for _, file in next, listfiles(ConfigManager.Path) do
+        local name = file:match("([^\\/]+)%.json$")
+        if name then
+            table.insert(files, name)
+        end
+    end
+    
+    return files
+end
+
+function ConfigManager:GetConfig(configName)
+    return ConfigManager.Configs[configName]
+end
+
+return ConfigManager
