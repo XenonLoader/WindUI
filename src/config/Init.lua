@@ -47,28 +47,45 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     local value = data.value
-
-                    -- Detect if this is a multi dropdown
-                    local isMulti = data.multi or element.Multi or (type(value) == "table" and #value > 1)
+                    local isMulti = data.multi or element.Multi
 
                     if isMulti and type(value) == "table" then
-                        -- Multi Dropdown: Clear all first, then select each item
-                        element:Select({})
-                        task.wait(0.05)
+                        -- DISABLE callback sementara
+                        local originalCallback = element.Callback
+                        element.Callback = function() end
 
-                        -- Select each item individually
+                        -- Clear semua seleksi dulu
+                        element.Value = {}
+                        element:Display()
+
+                        task.wait(0.1)
+
+                        -- Select semua item dari saved value
                         for _, item in ipairs(value) do
-                            element:Select(item)
-                            task.wait(0.02)
+                            local found = false
+                            for _, existing in ipairs(element.Value) do
+                                if existing == item then
+                                    found = true
+                                    break
+                                end
+                            end
+                            if not found then
+                                table.insert(element.Value, item)
+                            end
                         end
 
-                        -- Trigger callback with full array
-                        task.spawn(function()
-                            task.wait(0.1)
-                            if element.Callback then
+                        -- Update display
+                        element:Display()
+
+                        -- RESTORE callback dan trigger sekali dengan full array
+                        task.wait(0.1)
+                        element.Callback = originalCallback
+
+                        if element.Callback then
+                            task.spawn(function()
                                 element.Callback(value)
-                            end
-                        end)
+                            end)
+                        end
                     else
                         -- Single Dropdown
                         local singleValue = value
