@@ -41,24 +41,50 @@ ConfigManager = {
                 return {
                     __type = obj.__type,
                     value = obj.Value,
+                    multi = obj.Multi or false,
                 }
             end,
             Load = function(element, data)
                 if element then
-                    element:Select(data.value)
-                    
-                    -- Trigger callback if exists
-                    task.spawn(function()
-                        task.wait(0.1)
-                        if element.Callback then
-                            local value = data.value
-                            -- Handle array values - extract first element for single dropdown
-                            if type(value) == "table" and #value > 0 then
-                                value = value[1]
-                            end
-                            element.Callback(value)
+                    local value = data.value
+
+                    -- Detect if this is a multi dropdown
+                    local isMulti = data.multi or element.Multi or (type(value) == "table" and #value > 1)
+
+                    if isMulti and type(value) == "table" then
+                        -- Multi Dropdown: Clear all first, then select each item
+                        element:Select({})
+                        task.wait(0.05)
+
+                        -- Select each item individually
+                        for _, item in ipairs(value) do
+                            element:Select(item)
+                            task.wait(0.02)
                         end
-                    end)
+
+                        -- Trigger callback with full array
+                        task.spawn(function()
+                            task.wait(0.1)
+                            if element.Callback then
+                                element.Callback(value)
+                            end
+                        end)
+                    else
+                        -- Single Dropdown
+                        local singleValue = value
+                        if type(value) == "table" and #value > 0 then
+                            singleValue = value[1]
+                        end
+
+                        element:Select(singleValue)
+
+                        task.spawn(function()
+                            task.wait(0.1)
+                            if element.Callback then
+                                element.Callback(singleValue)
+                            end
+                        end)
+                    end
                 end
             end
         },
