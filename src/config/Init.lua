@@ -9,6 +9,10 @@ ConfigManager = {
     Folder = nil,
     Path = nil,
     Configs = {},
+    ExcludedTitles = {
+        ["Select Config"] = true,
+        ["Config Name"] = true,
+    },
     Parser = {
         Colorpicker = {
             Save = function(obj)
@@ -21,6 +25,14 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Update(Color3.fromHex(data.value), data.transparency or nil)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(Color3.fromHex(data.value), data.transparency)
+                        end
+                    end)
                 end
             end
         },
@@ -34,6 +46,19 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Select(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.1)
+                        if element.Callback then
+                            local value = data.value
+                            -- Handle array values - extract first element for single dropdown
+                            if type(value) == "table" and #value > 0 then
+                                value = value[1]
+                            end
+                            element.Callback(value)
+                        end
+                    end)
                 end
             end
         },
@@ -47,6 +72,14 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Set(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(data.value)
+                        end
+                    end)
                 end
             end
         },
@@ -60,6 +93,14 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Set(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(data.value)
+                        end
+                    end)
                 end
             end
         },
@@ -73,6 +114,14 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Set(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(data.value)
+                        end
+                    end)
                 end
             end
         },
@@ -86,6 +135,14 @@ ConfigManager = {
             Load = function(element, data)
                 if element then
                     element:Set(data.value)
+                    
+                    -- Trigger callback if exists
+                    task.spawn(function()
+                        task.wait(0.05)
+                        if element.Callback then
+                            element.Callback(data.value)
+                        end
+                    end)
                 end
             end
         },
@@ -142,6 +199,11 @@ function ConfigManager:CreateConfig(configFilename)
         if Window.AllElements then
             for i, element in ipairs(Window.AllElements) do
                 if element and element.__type then
+                    -- SKIP excluded elements (config UI elements)
+                    if element.Title and ConfigManager.ExcludedTitles[element.Title] then
+                        continue
+                    end
+                    
                     local elementName = element.Title or ("Element_" .. i)
                     elementName = elementName:gsub("[^%w_]", "_")
 
