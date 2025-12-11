@@ -3,7 +3,10 @@ local New = Creator.New
 local NewRoundFrame = Creator.NewRoundFrame
 local Tween = Creator.Tween
 
-local UserInputService = game:GetService("UserInputService")
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
+
+local UserInputService = cloneref(game:GetService("UserInputService"))
 
 
 local function Color3ToHSB(color)
@@ -149,7 +152,7 @@ return function(Config)
         ThumbnailFrame = Creator.Image(
             Element.Thumbnail, 
             Element.Title, 
-            Element.UICorner-3, 
+            Config.Window.NewElements and Element.UICorner-11 or (Element.UICorner-4), 
             Config.Window.Folder,
             "Thumbnail",
             false,
@@ -161,10 +164,12 @@ return function(Config)
         ImageFrame = Creator.Image(
             Element.Image, 
             Element.Title, 
-            Element.UICorner-3, 
+            Config.Window.NewElements and Element.UICorner-11 or (Element.UICorner-4), 
             Config.Window.Folder,
             "Image",
-            not Element.Color and true or false
+            Element.IconThemed,
+            not Element.Color and true or false,
+            "ElementIcon"
         )
         if typeof(Element.Color) == "string" then 
             ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
@@ -189,7 +194,7 @@ return function(Config)
             TextSize = Type == "Desc" and 15 or 17,
             TextXAlignment = "Left",
             ThemeTag = {
-                TextColor3 = not Element.Color and "Text" or nil,
+                TextColor3 = not Element.Color and ("Element" .. Type) or nil,
             },
             TextColor3 = Element.Color and TextColor or nil,
             TextTransparency = Type == "Desc" and .3 or 0,
@@ -202,9 +207,15 @@ return function(Config)
     
     local Title = CreateText(Element.Title, "Title")
     local Desc = CreateText(Element.Desc, "Desc")
+    if not Element.Title or Element.Title == "" then
+        Desc.Visible = false
+    end
     if not Element.Desc or Element.Desc == "" then
         Desc.Visible = false
     end
+    
+    Element.UIElements.Title = Title
+    Element.UIElements.Desc = Desc
     
     Element.UIElements.Container = New("Frame", {
         Size = UDim2.new(1,0,1,0),
@@ -214,7 +225,7 @@ return function(Config)
         New("UIListLayout", {
             Padding = UDim.new(0,Element.UIPadding),
             FillDirection = "Vertical",
-            VerticalAlignment = Config.Window.NewElements and "Top" or "Center",
+            VerticalAlignment = "Center",
             HorizontalAlignment = Element.Justify == "Between" and "Left" or "Center",
         }),
         ThumbnailFrame,
@@ -351,6 +362,71 @@ return function(Config)
         }),
     }, nil, true)
     
+    
+    local HoverOutline, HoverOutlineTable = NewRoundFrame(Element.UICorner, "Squircle-Outline", {
+        Size = UDim2.new(1,0,1,0),
+        ImageTransparency = 1, -- 0.25
+        Active = false,
+        ThemeTag = {
+            ImageColor3 = "Text",
+        },
+        Parent = ElementFullFrame,
+    }, {
+        New("UIListLayout", {
+            FillDirection = "Horizontal",
+            VerticalAlignment = "Center",
+            HorizontalAlignment = "Center",
+            Padding = UDim.new(0,8)
+        }),
+        New("UIGradient", {
+            Name = "HoverGradient",
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1))
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),     
+                NumberSequenceKeypoint.new(0.25, 0.9),
+                NumberSequenceKeypoint.new(0.5, 0.3), 
+                NumberSequenceKeypoint.new(0.75, 0.9), 
+                NumberSequenceKeypoint.new(1, 1)      
+            }),
+        }),
+    }, nil, true)
+    
+    local Hover, HoverTable = NewRoundFrame(Element.UICorner, "Squircle", {
+        Size = UDim2.new(1,0,1,0),
+        ImageTransparency = 1, -- 0.88
+        Active = false,
+        ThemeTag = {
+            ImageColor3 = "Text",
+        },
+        Parent = ElementFullFrame,
+    }, {
+        New("UIGradient", {
+            Name = "HoverGradient",
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1))
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),     
+                NumberSequenceKeypoint.new(0.25, 0.9),
+                NumberSequenceKeypoint.new(0.5, 0.3), 
+                NumberSequenceKeypoint.new(0.75, 0.9), 
+                NumberSequenceKeypoint.new(1, 1)      
+            }),
+        }),
+        New("UIListLayout", {
+            FillDirection = "Horizontal",
+            VerticalAlignment = "Center",
+            HorizontalAlignment = "Center",
+            Padding = UDim.new(0,8)
+        }),
+    }, nil, true)
+    
     local Main, MainTable = NewRoundFrame(Element.UICorner, "Squircle", {
         Size = UDim2.new(1,0,0,0),
         AutomaticSize = "Y",
@@ -360,7 +436,7 @@ return function(Config)
         --AutoButtonColor = false,
         Parent = Config.Parent,
         ThemeTag = {
-            ImageColor3 = not Element.Color and "Text" or nil
+            ImageColor3 = not Element.Color and "ElementBackground" or nil
         },
         ImageColor3 = Element.Color and 
             ( 
@@ -386,12 +462,20 @@ return function(Config)
     if Element.Hover then
         Creator.AddSignal(Main.MouseEnter, function()
             if CanHover then
-                Tween(Main, .05, {ImageTransparency = Element.Color and .15 or .9}):Play()
+                Tween(Main, .12, {ImageTransparency = Element.Color and .15 or .9}):Play()
+                Tween(Hover, .12, {ImageTransparency = .9}):Play()
+                Tween(HoverOutline, .12, {ImageTransparency = .8}):Play()
+                Creator.AddSignal(Main.MouseMoved, function(x,y)
+                    Hover.HoverGradient.Offset = Vector2.new(((x - Main.AbsolutePosition.X) / Main.AbsoluteSize.X) - 0.5, 0)
+                    HoverOutline.HoverGradient.Offset = Vector2.new(((x - Main.AbsolutePosition.X) / Main.AbsoluteSize.X) - 0.5, 0)
+                end)
             end
         end)
         Creator.AddSignal(Main.InputEnded, function()
             if CanHover then
-                Tween(Main, .05, {ImageTransparency = Element.Color and .05 or .93}):Play()
+                Tween(Main, .12, {ImageTransparency = Element.Color and .05 or .93}):Play()
+                Tween(Hover, .12, {ImageTransparency = 1}):Play()
+                Tween(HoverOutline, .12, {ImageTransparency = 1}):Play()
             end
         end)
     end
@@ -490,76 +574,42 @@ return function(Config)
         end
     end
     
-    function Element:SetImage(newImage, newSize, newColor, newIconThemed)
+    function Element:SetImage(newImage, newSize)
         Element.Image = newImage
         if newSize then
             Element.ImageSize = newSize
             ImageSize = newSize
         end
-        if newColor ~= nil then
-            Element.Color = newColor
-        end
-        if newIconThemed ~= nil then
-            Element.IconThemed = newIconThemed
-        end
         
-        if ImageFrame then
-            if newImage then
-                ImageFrame.Size = UDim2.new(0,ImageSize,0,ImageSize)
-                Creator.UpdateImage(ImageFrame, newImage, Element.Title)
-                
-                if typeof(Element.Color) == "string" then 
-                    ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
-                elseif typeof(Element.Color) == "Color3" then
-                    ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Element.Color)
-                elseif not Element.Color then
-                    ImageFrame.ImageLabel.ImageColor3 = Color3.new(1,1,1)
-                end
-                
-                ImageFrame.Visible = true
-                IconOffset = ImageSize
-            else
-                ImageFrame.Visible = false
-                IconOffset = 0
+        if newImage then
+            ImageFrame = Creator.Image(
+                newImage, 
+                Element.Title, 
+                Element.UICorner-3, 
+                Config.Window.Folder,
+                "Image",
+                not Element.Color and true or false
+            )
+            
+            if typeof(Element.Color) == "string" then 
+                ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
+            elseif typeof(Element.Color) == "Color3" then
+                ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Element.Color)
             end
+            
+            ImageFrame.Visible = true
+
+            ImageFrame.Size = UDim2.new(0,ImageSize,0,ImageSize)
+            IconOffset = ImageSize
+            
         else
-            if newImage then
-                ImageFrame = Creator.Image(
-                    newImage, 
-                    Element.Title, 
-                    Element.UICorner-3, 
-                    Config.Window.Folder,
-                    "Image",
-                    not Element.Color and true or false
-                )
-                
-                if typeof(Element.Color) == "string" then 
-                    ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
-                elseif typeof(Element.Color) == "Color3" then
-                    ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Element.Color)
-                end
-                
-                ImageFrame.Size = UDim2.new(0,ImageSize,0,ImageSize)
-                IconOffset = ImageSize
-                
-                local horizontalContainer = Element.UIElements.Container:FindFirstChild("Frame")
-                if horizontalContainer then
-                    ImageFrame.Parent = horizontalContainer
-                    local layout = horizontalContainer:FindFirstChild("UIListLayout")
-                    if layout then
-                        ImageFrame.LayoutOrder = 0
-                    end
-                end
+            if ImageFrame then
+                ImageFrame.Visible = true
             end
+            IconOffset = 0
         end
         
-        -- local textContainer = Element.UIElements.Container.TitleFrame
-        -- if textContainer then
-        --     local textFrame = textContainer:FindFirstChild("Frame")
-        --     if textFrame then
-        --         textFrame.Size = UDim2.new(1,-IconOffset,1,0)
-        --     end
-        -- end
+        Element.UIElements.Container.TitleFrame.TitleFrame.Size = UDim2.new(1,-IconOffset,1,0)
     end
     
     function Element:Destroy()
@@ -616,7 +666,7 @@ return function(Config)
             Parent = Highlight
         })
         
-        HighlightOutline.ImageTransparency = 0.25
+        HighlightOutline.ImageTransparency = 0.65
         Highlight.ImageTransparency = 0.88
         
         Tween(OutlineGradient, 0.75, {
@@ -640,12 +690,20 @@ return function(Config)
 
     function Element.UpdateShape(Tab)
         if Config.Window.NewElements then
-            local newShape = getElementPosition(Tab.Elements, Element.Index)
+            local newShape
+            if Config.ParentConfig.ParentType == "Group" then
+                newShape = "Squircle"
+            else
+                newShape = getElementPosition(Tab.Elements, Element.Index)
+            end
+            
             if newShape and Main then
                 MainTable:SetType(newShape)
                 LockedTable:SetType(newShape)
                 HighlightTable:SetType(newShape)
                 HighlightOutlineTable:SetType(newShape .. "-Outline")
+                HoverTable:SetType(newShape)
+                HoverOutlineTable:SetType(newShape .. "-Outline")
             end
         end
     end

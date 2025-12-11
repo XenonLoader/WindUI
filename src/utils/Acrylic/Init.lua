@@ -1,5 +1,8 @@
 -- Credits: Fluent - Dawid
 
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
+
 local Acrylic = {
 	AcrylicBlur = require("./Blur"),
 	--CreateAcrylic = require("./"),
@@ -18,7 +21,7 @@ function Acrylic.init()
 		for _, effect in pairs(depthOfFieldDefaults) do
 			effect.Enabled = false
 		end
-		baseEffect.Parent = game:GetService("Lighting")
+		baseEffect.Parent = cloneref(game:GetService("Lighting"))
 	end
 
 	function Acrylic.Disable()
@@ -35,12 +38,12 @@ function Acrylic.init()
 			end
 		end
 
-		for _, child in pairs(game:GetService("Lighting"):GetChildren()) do
+		for _, child in pairs(cloneref(game:GetService("Lighting")):GetChildren()) do
 			register(child)
 		end
 
-		if game:GetService("Workspace").CurrentCamera then
-			for _, child in pairs(game:GetService("Workspace").CurrentCamera:GetChildren()) do
+		if cloneref(game:GetService("Workspace")).CurrentCamera then
+			for _, child in pairs(cloneref(game:GetService("Workspace")).CurrentCamera:GetChildren()) do
 				register(child)
 			end
 		end

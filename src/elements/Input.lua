@@ -40,6 +40,7 @@ function Element:New(Config)
         Index = Config.Index,
         Window = Config.Window,
         ElementTable = Input,
+        ParentConfig = Config,
     })
     
     local InputComponent = CreateInput(
@@ -48,7 +49,7 @@ function Element:New(Config)
         Input.Type == "Textarea" and Input.InputFrame.UIElements.Container or Input.InputFrame.UIElements.Main, 
         Input.Type, 
         function(v)
-            Input:Set(v)
+            Input:Set(v, true)
         end,
         nil,
         Config.Window.NewElements and 12 or 10,
@@ -57,8 +58,8 @@ function Element:New(Config)
     
     if Input.Type == "Input" then
         InputComponent.Size = UDim2.new(0,Input.Width,0,36)
-        InputComponent.Position = UDim2.new(1,0,0.5,0)
-        InputComponent.AnchorPoint = Vector2.new(1,0.5)
+        InputComponent.Position = UDim2.new(1,0,Config.Window.NewElements and 0 or 0.5,0)
+        InputComponent.AnchorPoint = Vector2.new(1,Config.Window.NewElements and 0 or 0.5)
     else
         InputComponent.Size = UDim2.new(1,0,0,42+56+50)
     end
@@ -80,14 +81,17 @@ function Element:New(Config)
     end
     
     
-    function Input:Set(v)
+    function Input:Set(v, IsUserInput)
         if CanCallback then
+            Input.Value = v
             Creator.SafeCallback(Input.Callback, v)
             
-            InputComponent.Frame.Frame.TextBox.Text = v
-            Input.Value = v
+            if not IsUserInput then
+                InputComponent.Frame.Frame.TextBox.Text = v
+            end
         end
     end
+    
     function Input:SetPlaceholder(v)
         InputComponent.Frame.Frame.TextBox.PlaceholderText = v
         Input.Placeholder = v

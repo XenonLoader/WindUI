@@ -10,7 +10,10 @@ return function(WindUI)
             Placeholder = Color3.fromHex("#7a7a7a"),
             Background = Color3.fromHex("#101010"),
             Button = Color3.fromHex("#52525b"),
-            Icon = Color3.fromHex("#a1a1aa")
+            Icon = Color3.fromHex("#a1a1aa"),
+            Toggle = Color3.fromHex("#33C759"),
+            Slider = Color3.fromHex("#0091FF"),
+            Checkbox = Color3.fromHex("#0091FF"),
         },
         Light = {
             Name = "Light",
@@ -217,6 +220,6 @@ return function(WindUI)
             }),
         
             Icon = Color3.fromHex("#ffffff"),
-        }
+        },
     }
 end

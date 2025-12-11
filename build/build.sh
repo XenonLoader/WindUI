@@ -1,18 +1,12 @@
 #!/bin/bash
 
 MODE=${1:-"build"}
-INPUT_FILE=${2:-"./main.lua"}
 
-
-if [ "$MODE" = "dev" ]; then
-    INPUT_FILE=${INPUT_FILE:-"./main.lua"}
-    OUTPUT_FILE="dist/main.lua"
-    CONFIG_FILE="build/darklua.dev.config.json"
-else
-    INPUT_FILE="src/init.lua"
-    OUTPUT_FILE="dist/main.lua"
-    CONFIG_FILE="build/darklua.dev.config.json"
-fi
+P='\033[38;2;48;255;106m'
+D='\033[38;2;255;210;50m'
+B='\033[38;2;50;231;255m'
+E='\033[38;2;255;74;50m'
+R='\033[0m'
 
 {
     echo "-- Generated from package.json | build/build.sh"
@@ -22,21 +16,63 @@ fi
     echo "]]"
 } > build/package.lua
 
-DARKLUA_OUTPUT=$(darklua process "$INPUT_FILE" "$OUTPUT_FILE" --config "$CONFIG_FILE" 2>&1)
-
-if [ $? -ne 0 ]; then
-    echo "DarkLua ended with an error:"
-    echo "$DARKLUA_OUTPUT"
-    exit 1
-fi
-
-if echo "$DARKLUA_OUTPUT" | grep -q "successfully processed"; then
-    FILE_COUNT=$(echo "$DARKLUA_OUTPUT" | sed -n 's/.*successfully processed \([0-9]\+\) file.*/\1/p')
-    PROCESSING_TIME=$(echo "$DARKLUA_OUTPUT" | sed -n 's/.*in \([0-9.]\+\)ms).*/\1/p')
-    
-    lua build/init.lua "$FILE_COUNT" "$PROCESSING_TIME" "$MODE"
+if [ "$MODE" = "dev" ]; then
+    INPUT=${2:-"./main.lua"}
+    PREFIX="${D}[ DEV ]${R}"
 else
-    echo "Failed to find successful processing data in the DarkLua output:"
-    echo "$DARKLUA_OUTPUT"
+    INPUT="src/Init.lua"
+    PREFIX="${B}[ BUILD ]${R}"
+fi
+
+OUTPUT="dist/main.lua"
+CONFIG="build/darklua.dev.config.json"
+
+PKG=$(node -e "const p=require('./package.json');console.log(JSON.stringify({v:p.version||'',d:p.description||'',r:p.repository||'',s:p.discord||'',l:p.license||''}))")
+
+[ $? -ne 0 ] && echo -e "${E}[ × ]${R} Failed to read package.json" && exit 1
+
+VER=$(echo $PKG | node -pe "JSON.parse(require('fs').readFileSync(0,'utf-8')).v")
+DATE=$(date '+%Y-%m-%d')
+
+HEADER=$(cat build/header.lua | node -e "
+const pkg=JSON.parse('$PKG');
+let h=require('fs').readFileSync(0,'utf-8');
+h=h.replace(/{{VERSION}}/g,'$VER')
+   .replace(/{{BUILD_DATE}}/g,'$DATE')
+   .replace(/{{DESCRIPTION}}/g,pkg.d)
+   .replace(/{{REPOSITORY}}/g,pkg.r)
+   .replace(/{{DISCORD}}/g,pkg.s)
+   .replace(/{{LICENSE}}/g,pkg.l);
+console.log(h);
+")
+
+START=$(date +%s%N)
+DARKLUA_OUT=$(darklua process "$INPUT" dist/temp.lua --config "$CONFIG" 2>&1)
+DARKLUA_EXIT=$?
+
+if [ $DARKLUA_EXIT -ne 0 ]; then
+    echo -e "${E}[ × ]${R} DarkLua failed"
+    echo "$DARKLUA_OUT"
+    rm -f dist/temp.lua
     exit 1
 fi
+
+END=$(date +%s%N)
+TIME=$((($END - $START) / 1000000))
+
+echo "$HEADER" > "$OUTPUT"
+echo "" >> "$OUTPUT"
+cat dist/temp.lua >> "$OUTPUT"
+rm -f dist/temp.lua
+
+SIZE=$(($(wc -c < "$OUTPUT") / 1024))
+
+echo ""
+echo -e "[ $(date '+%H:%M:%S') ]"
+echo -e "${P}[ ✓ ]${R} $PREFIX"
+echo -e "${P}[ > ]${R} WindUI Build completed successfully"
+echo -e "${P}[ > ]${R} Version: ${VER}"
+echo -e "${P}[ > ]${R} Time taken: ${TIME}ms"
+echo -e "${P}[ > ]${R} Size: ${SIZE}KB"
+echo -e "${P}[ > ]${R} Output file: ${OUTPUT}"
+echo ""

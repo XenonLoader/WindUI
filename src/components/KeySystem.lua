@@ -8,7 +8,7 @@ local Tween = Creator.Tween
 local CreateButton = require("./ui/Button").New
 local CreateInput = require("./ui/Input").New
 
-function KeySystem.new(Config, Filename, func)
+function KeySystem.new(Config, Filename, func, keyValidator)
     local KeyDialogInit = require("./window/Dialog").Init(nil, Config.WindUI.ScreenGui.KeySystem)
     local KeyDialog = KeyDialogInit.Create(true)
     
@@ -45,13 +45,14 @@ function KeySystem.new(Config, Filename, func)
     local Title = New("TextLabel", {
         AutomaticSize = "XY",
         BackgroundTransparency = 1,
-        Text = Config.Title,
+        Text = Config.KeySystem.Title or Config.Title,
         FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold),
         ThemeTag = {
             TextColor3 = "Text",
         },
         TextSize = 20
     })
+
     local KeySystemTitle = New("TextLabel", {
         AutomaticSize = "XY",
         BackgroundTransparency = 1,
@@ -428,7 +429,7 @@ function KeySystem.new(Config, Filename, func)
     
     local function handleSuccess(key)
         KeyDialog:Close()()
-        writefile((Config.Folder or Config.Title) .. "/" .. Filename .. ".key", tostring(key))
+        writefile((Config.Folder or "Temp") .. "/" .. Filename .. ".key", tostring(key))
         task.wait(.4)
         func(true)
     end
@@ -436,8 +437,26 @@ function KeySystem.new(Config, Filename, func)
     local SubmitButton = CreateButton("Submit", "arrow-right", function()
         local key = tostring(EnteredKey or "empty")
         local folder = Config.Folder or Config.Title
-    
-        if not Config.KeySystem.API then
+        
+        if Config.KeySystem.KeyValidator then
+            local isValid = Config.KeySystem.KeyValidator(key)
+            
+            if isValid then
+                if Config.KeySystem.SaveKey then
+                    handleSuccess(key)
+                else
+                    KeyDialog:Close()()
+                    task.wait(.4)
+                    func(true)
+                end
+            else
+                Config.WindUI:Notify({
+                    Title = "Key System. Error",
+                    Content = "Invalid key.",
+                    Icon = "triangle-alert",
+                })
+            end
+        elseif not Config.KeySystem.API then            
             local isKey = type(Config.KeySystem.Key) == "table"
                 and table.find(Config.KeySystem.Key, key)
                 or Config.KeySystem.Key == key

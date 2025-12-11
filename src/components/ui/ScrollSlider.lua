@@ -1,6 +1,9 @@
 local ScrollSlider = {}
 
-local UserInputService = game:GetService("UserInputService")
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
+
+local UserInputService = cloneref(game:GetService("UserInputService"))
 
 local Creator = require("../../modules/Creator")
 local New = Creator.New

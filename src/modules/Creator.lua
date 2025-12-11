@@ -1,15 +1,19 @@
-local RunService = game:GetService("RunService")
+
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
+local RunService = cloneref(game:GetService("RunService"))
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local TweenService = cloneref(game:GetService("TweenService"))
+local LocalizationService = cloneref(game:GetService("LocalizationService"))
+local HttpService = cloneref(game:GetService("HttpService"))
+
 local RenderStepped = RunService.Heartbeat
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local LocalizationService = game:GetService("LocalizationService")
-local HttpService = game:GetService("HttpService")
 
 local IconsURL = "https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"
 
 local Icons = loadstring(
     game.HttpGetAsync and game:HttpGetAsync(IconsURL)
-    or HttpService:GetAsync(IconsURL)
+    or HttpService:GetAsync(IconsURL) --studio
 )()
 Icons.SetIconsType("lucide")
 
@@ -93,6 +97,24 @@ local Creator = {
         White = "#ffffff",
         Grey = "#484848",
     },
+    ThemeFallbacks = require("../themes/Fallbacks"),
+    Shapes = {
+        Square = "rbxassetid://82909646051652",
+        ["Square-Outline"] = "rbxassetid://72946211851948",
+        
+        Squircle = "rbxassetid://80999662900595",
+        SquircleOutline = "rbxassetid://117788349049947",
+        ["Squircle-Outline"] = "rbxassetid://117817408534198",
+        
+        SquircleOutline2 = "rbxassetid://117817408534198",
+        
+        ["Shadow-sm"] = "rbxassetid://84825982946844",
+        
+        ["Squircle-TL-TR"] = "rbxassetid://73569156276236",
+        ["Squircle-BL-BR"] = "rbxassetid://93853842912264",
+        ["Squircle-TL-TR-Outline"] = "rbxassetid://136702870075563",
+        ["Squircle-BL-BR-Outline"] = "rbxassetid://75035847706564",
+    }
 }
 
 function Creator.Init(WindUITable)
@@ -173,7 +195,7 @@ end
 
 function Creator.SetTheme(Theme)
     Creator.Theme = Theme
-    Creator.UpdateTheme(nil, true)
+    Creator.UpdateTheme(nil, false)
 end
 
 function Creator.AddFontObject(Object)
@@ -189,26 +211,75 @@ function Creator.UpdateFont(FontId)
 end
 
 function Creator.GetThemeProperty(Property, Theme)
-    local value = Theme[Property] or Creator.Themes["Dark"][Property]
-    
-    if not value then return nil end
-    
-    if type(value) == "string" and string.sub(value, 1, 1) == "#" then
-        return Color3.fromHex(value)
-    end
-    
-    if typeof(value) == "Color3" then
+    local function getValue(prop, themeTable)
+        local value = themeTable[prop]
+        
+        if value == nil then return nil end
+        
+        if typeof(value) == "string" and string.sub(value, 1, 1) == "#" then
+            return Color3.fromHex(value)
+        end
+        
+        if typeof(value) == "Color3" then
+            return value
+        end
+        
+        if typeof(value) == "number" then
+            return value
+        end
+        
+        if typeof(value) == "table" and value.Color and value.Transparency then
+            return value
+        end
+        
+        if typeof(value) == "function" then
+            return value()
+        end
+        
         return value
     end
-    
-    if type(value) == "table" and value.Color and value.Transparency then
-        return value
+
+    local value = getValue(Property, Theme)
+    if value ~= nil then
+        if typeof(value) == "string" and string.sub(value, 1, 1) ~= "#" then
+            local referencedValue = Creator.GetThemeProperty(value, Theme)
+            if referencedValue ~= nil then
+                return referencedValue
+            end
+        else
+            return value
+        end
     end
-    
-    if type(value) == "function" then
-        return value()
+
+    local fallbackProperty = Creator.ThemeFallbacks[Property]
+    if fallbackProperty ~= nil then
+        if typeof(fallbackProperty) == "string" and string.sub(fallbackProperty, 1, 1) ~= "#" then
+            return Creator.GetThemeProperty(fallbackProperty, Theme)
+        else
+            return getValue(Property, {[Property] = fallbackProperty})
+        end
     end
-    
+
+    value = getValue(Property, Creator.Themes["Dark"])
+    if value ~= nil then
+        if typeof(value) == "string" and string.sub(value, 1, 1) ~= "#" then
+            local referencedValue = Creator.GetThemeProperty(value, Creator.Themes["Dark"])
+            if referencedValue ~= nil then
+                return referencedValue
+            end
+        else
+            return value
+        end
+    end
+
+    if fallbackProperty ~= nil then
+        if typeof(fallbackProperty) == "string" and string.sub(fallbackProperty, 1, 1) ~= "#" then
+            return Creator.GetThemeProperty(fallbackProperty, Creator.Themes["Dark"])
+        else
+            return getValue(Property, {[Property] = fallbackProperty})
+        end
+    end
+
     return nil
 end
 
@@ -230,7 +301,7 @@ function Creator.UpdateTheme(TargetObject, isTween)
     local function ApplyTheme(objData)
         for Property, ColorKey in pairs(objData.Properties or {}) do
             local value = Creator.GetThemeProperty(ColorKey, Creator.Theme)
-            if value then
+            if value ~= nil then
                 if typeof(value) == "Color3" then
                     local gradient = objData.Object:FindFirstChild("WindUIGradient")
                     if gradient then
@@ -242,7 +313,7 @@ function Creator.UpdateTheme(TargetObject, isTween)
                     else
                         Creator.Tween(objData.Object, 0.08, { [Property] = value }):Play()
                     end
-                elseif type(value) == "table" and value.Color and value.Transparency then
+                elseif typeof(value) == "table" and value.Color and value.Transparency then
                     objData.Object[Property] = Color3.new(1, 1, 1)
                     
                     local gradient = objData.Object:FindFirstChild("WindUIGradient")
@@ -260,8 +331,15 @@ function Creator.UpdateTheme(TargetObject, isTween)
                             gradient[prop] = propValue
                         end
                     end
+                elseif typeof(value) == "number" then
+                    if not isTween then
+                        objData.Object[Property] = value
+                    else
+                        Creator.Tween(objData.Object, 0.08, { [Property] = value }):Play()
+                    end
                 end
             else
+
                 local gradient = objData.Object:FindFirstChild("WindUIGradient")
                 if gradient then
                     gradient:Destroy()
@@ -345,8 +423,8 @@ function Creator.SetLanguage(lang)
     Creator.UpdateLang()
 end
 
-function Creator.Icon(Icon)
-    return Icons.Icon(Icon)
+function Creator.Icon(Icon, formatdefault)
+    return Icons.Icon2(Icon, nil, formatdefault ~= false)
 end
 
 function Creator.AddIcons(packName, iconsData)
@@ -394,17 +472,7 @@ end
 
 function Creator.NewRoundFrame(Radius, Type, Properties, Children, isButton, ReturnTable)
     local function getImageForType(shapeType)
-        return shapeType == "Squircle" and "rbxassetid://80999662900595"
-             or shapeType == "SquircleOutline" and "rbxassetid://117788349049947" 
-             or shapeType == "SquircleOutline2" and "rbxassetid://117817408534198" 
-             or shapeType == "Squircle-Outline" and "rbxassetid://117817408534198" 
-             or shapeType == "Shadow-sm" and "rbxassetid://84825982946844"
-             or shapeType == "Squircle-TL-TR" and "rbxassetid://73569156276236"
-             or shapeType == "Squircle-BL-BR" and "rbxassetid://93853842912264"
-             or shapeType == "Squircle-TL-TR-Outline" and "rbxassetid://136702870075563"
-             or shapeType == "Squircle-BL-BR-Outline" and "rbxassetid://75035847706564"
-             or shapeType == "Square" and "rbxassetid://82909646051652"
-             or shapeType == "Square-Outline" and "rbxassetid://72946211851948"
+        return Creator.Shapes[shapeType]
     end
     
     local function getSliceCenterForType(shapeType)
@@ -481,18 +549,22 @@ function Creator.SetDraggable(can)
     Creator.CanDraggable = can
 end
 
+
+
 function Creator.Drag(mainFrame, dragFrames, ondrag)
     local currentDragFrame = nil
-    local dragging, dragInput, dragStart, startPos
+    local dragging, dragStart, startPos
     local DragModule = {
         CanDraggable = true
     }
     
-    if not dragFrames or type(dragFrames) ~= "table" then
+    if not dragFrames or typeof(dragFrames) ~= "table" then
         dragFrames = {mainFrame}
     end
     
     local function update(input)
+        if not dragging or not DragModule.CanDraggable then return end
+        
         local delta = input.Position - dragStart
         Creator.Tween(mainFrame, 0.02, {Position = UDim2.new(
             startPos.X.Scale, startPos.X.Offset + delta.X,
@@ -509,7 +581,7 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
                     dragStart = input.Position
                     startPos = mainFrame.Position
                     
-                    if ondrag and type(ondrag) == "function" then 
+                    if ondrag and typeof(ondrag) == "function" then 
                         ondrag(true, currentDragFrame)
                     end
                     
@@ -518,8 +590,8 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
                             dragging = false
                             currentDragFrame = nil
                             
-                            if ondrag and type(ondrag) == "function" then 
-                                ondrag(false, currentDragFrame)
+                            if ondrag and typeof(ondrag) == "function" then 
+                                ondrag(false, nil)
                             end
                         end
                     end)
@@ -528,17 +600,17 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
         end)
         
         dragFrame.InputChanged:Connect(function(input)
-            if currentDragFrame == dragFrame and dragging then
+            if dragging and currentDragFrame == dragFrame then
                 if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                    dragInput = input
+                    update(input)
                 end
             end
         end)
     end
     
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging and currentDragFrame ~= nil then
-            if DragModule.CanDraggable then 
+        if dragging and currentDragFrame ~= nil then
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
                 update(input)
             end
         end
@@ -551,17 +623,27 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
     return DragModule
 end
 
+
 Icons.Init(New, "Icon")
 
-function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
-    local function SanitizeFilename(str)
-        str = str:gsub("[%s/\\:*?\"<>|]+", "-")
-        str = str:gsub("[^%w%-_%.]", "")
-        return str
+
+function Creator.SanitizeFilename(url)
+    local filename = url:match("([^/]+)$") or url
+    
+    filename = filename:gsub("%.[^%.]+$", "")
+    
+    filename = filename:gsub("[^%w%-_]", "_")
+    
+    if #filename > 50 then
+        filename = filename:sub(1, 50)
     end
     
+    return filename
+end
+
+function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed, ThemeTagName)
     Folder = Folder or "Temp"
-    Name = SanitizeFilename(Name)
+    Name = Creator.SanitizeFilename(Name)
     
     local ImageFrame = New("Frame", {
         Size = UDim2.new(0,0,0,0),
@@ -572,7 +654,7 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
             BackgroundTransparency = 1,
             ScaleType = "Crop",
             ThemeTag = (Creator.Icon(Img) or Themed) and {
-                ImageColor3 = IsThemeTag and "Icon" or nil 
+                ImageColor3 = IsThemeTag and (ThemeTagName or "Icon") or nil 
             } or nil,
         }, {
             New("UICorner", {
@@ -587,24 +669,32 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
             Icon = Img, 
             Size = UDim2.new(1,0,1,0), 
             Colors = { 
-                (IsThemeTag and "Icon" or false),
+                (IsThemeTag and (ThemeTagName or "Icon") or false),
                 "Button" 
-            } 
+            }
         }).IconFrame
         IconLabel.Parent = ImageFrame
     elseif string.find(Img,"http") then
-        local FileName = "WindUI/" .. Folder .. "/Assets/." .. Type .. "-" .. Name .. ".png"
+        local FileName = "WindUI/" .. Folder .. "/assets/." .. Type .. "-" .. Name .. ".png"
         local success, response = pcall(function()
             task.spawn(function()
-                if not isfile(FileName) then
-                    local response = Creator.Request({
-                        Url = Img,
-                        Method = "GET",
-                    }).Body
+                local response = Creator.Request({
+                    Url = Img,
+                    Method = "GET",
+                }).Body
+                
+                writefile(FileName, response)
+                --ImageFrame.ImageLabel.Image = getcustomasset(FileName)
+                
+                local assetSuccess, asset = pcall(getcustomasset, FileName)
+                if assetSuccess then
+                    ImageFrame.ImageLabel.Image = asset
+                else
+                    warn(string.format("[ WindUI.Creator ] Failed to load custom asset '%s': %s", FileName, tostring(asset)))
+                    ImageFrame:Destroy()
                     
-                    writefile(FileName, response)
+                    return
                 end
-                ImageFrame.ImageLabel.Image = getcustomasset(FileName)
             end)
         end)
         if not success then
@@ -620,5 +710,68 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed)
     
     return ImageFrame
 end
+
+
+
+function Creator.Color3ToHSB(color)
+	local r, g, b = color.R, color.G, color.B
+	local max = math.max(r, g, b)
+	local min = math.min(r, g, b)
+	local delta = max - min
+
+	local h = 0
+	if delta ~= 0 then
+		if max == r then
+			h = (g - b) / delta % 6
+		elseif max == g then
+			h = (b - r) / delta + 2
+		else
+			h = (r - g) / delta + 4
+		end
+		h = h * 60
+	else
+		h = 0
+	end
+
+	local s = (max == 0) and 0 or (delta / max)
+	local v = max
+
+	return {
+		h = math.floor(h + 0.5),
+		s = s,
+		b = v
+	}
+end
+
+function Creator.GetPerceivedBrightness(color)
+	local r = color.R
+	local g = color.G
+	local b = color.B
+	return 0.299 * r + 0.587 * g + 0.114 * b
+end
+
+function Creator.GetTextColorForHSB(color)
+    local hsb = Creator.Color3ToHSB(color)
+	local h, s, b = hsb.h, hsb.s, hsb.b
+	if Creator.GetPerceivedBrightness(color) > 0.68 then
+		return Color3.fromHSV(h / 360, 0, 0.05)
+	else
+		return Color3.fromHSV(h / 360, 0, 0.98)
+	end
+end
+
+function Creator.GetAverageColor(gradient)
+    local r, g, b = 0, 0, 0
+    local keypoints = gradient.Color.Keypoints
+    for _, k in ipairs(keypoints) do
+        -- bruh
+        r = r + k.Value.R
+        g = g + k.Value.G
+        b = b + k.Value.B
+    end
+    local n = #keypoints
+    return Color3.new(r/n, g/n, b/n)
+end
+
 
 return Creator

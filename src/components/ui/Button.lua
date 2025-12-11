@@ -5,9 +5,9 @@ local New = Creator.New
 local Tween = Creator.Tween
 
 
-function Button.New(Title, Icon, Callback, Variant, Parent, Dialog, FullRounded)
+function Button.New(Title, Icon, Callback, Variant, Parent, Dialog, FullRounded, Radius)
     Variant = Variant or "Primary"
-    local Radius = not FullRounded and 10 or 99
+    local Radius = Radius or (not FullRounded and 10 or 99)
     local IconButtonFrame
     if Icon and Icon ~= "" then
         IconButtonFrame = New("ImageLabel", {

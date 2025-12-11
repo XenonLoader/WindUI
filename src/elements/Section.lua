@@ -122,8 +122,8 @@ function Element:New(Config)
             Name = "Top",
         }, {
             Section.Box and New("UIPadding", {
-                PaddingLeft = UDim.new(0,Config.Window.ElementConfig.UIPadding),
-                PaddingRight = UDim.new(0,Config.Window.ElementConfig.UIPadding),
+                PaddingLeft = UDim.new(0,Config.Window.ElementConfig.UIPadding + (Config.Window.NewElements and 4 or 0)),
+                PaddingRight = UDim.new(0,Config.Window.ElementConfig.UIPadding + (Config.Window.NewElements and 4 or 0)),
             }) or nil,
             Icon,
             TitleFrame,
@@ -160,6 +160,7 @@ function Element:New(Config)
     --     Section.UIElements.Main.Size = UDim2.new(1,0,0,Section.UIElements.Main.TextBounds.Y)
     -- end)
     
+    Section.ElementFrame = Main
     
     
     local ElementsModule = Config.ElementsModule
@@ -198,7 +199,7 @@ function Element:New(Config)
         if Section.Expandable then
             Section.Opened = true
             Tween(Main, 0.33, {
-                Size = UDim2.new(1,0,0, Section.HeaderSize + (Main.Content.AbsoluteSize.Y/Config.UIScale))
+                Size = UDim2.new(Main.Size.X.Scale,Main.Size.X.Offset,0, Section.HeaderSize + (Main.Content.AbsoluteSize.Y/Config.UIScale))
             }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
             
             Tween(ChevronIconFrame.ImageLabel, 0.1, {Rotation = 180}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
@@ -208,7 +209,7 @@ function Element:New(Config)
         if Section.Expandable then
             Section.Opened = false
             Tween(Main, 0.26, {
-                Size = UDim2.new(1,0,0, Section.HeaderSize)
+                Size = UDim2.new(Main.Size.X.Scale,Main.Size.X.Offset,0, Section.HeaderSize)
             }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
             Tween(ChevronIconFrame.ImageLabel, 0.1, {Rotation = 0}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
         end
@@ -224,8 +225,14 @@ function Element:New(Config)
         end
     end)
     
+    Creator.AddSignal(Main.Content.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+        if Section.Opened then
+            Section:Open()
+        end
+    end)
+    
     task.spawn(function()
-        task.wait()
+        task.wait(0.02)
         if Section.Expandable then
             -- New("UIPadding", {
             --     PaddingTop = UDim.new(0,4),
@@ -235,7 +242,7 @@ function Element:New(Config)
                 
             --     Parent = Main.Top,
             -- })
-            Main.Size = UDim2.new(1,0,0,Section.HeaderSize)
+            Main.Size = UDim2.new(Main.Size.X.Scale,Main.Size.X.Offset,0,Section.HeaderSize)
             Main.AutomaticSize = "None"
             Main.Top.Size = UDim2.new(1,0,0,Section.HeaderSize)
             Main.Top.AutomaticSize = "None"

@@ -1,18 +1,22 @@
-# 1.6.53
+# 1.6.62
 ## Changelog:
-- Themes Rework (Gradients, Color3)
-- Fixed Label Colors
-- Fixed `Tab:Select()`
-- Fixed Dropdown Height
-- Fixed `Window.BackgroundImageTransparency`
-- Fixed Window Background Animation
-- Fixed Input
-- Fixed Section Center Text
-- Fixed OpenButton on PC
-- Fixed UI in studio (maybe)
-- Added `IconSize` to `Window`
-- Added `OpenButton` to `:CreateWindow()`
-- Added Icons to `Dropdown`
-- Added `IconOnly` to `OpenButton`
-- Added Section box
-- Added `:SetMax(number)` and `:SetMin(number)` to `Slider`
+- Added `IsTooltip` and `IsTextbox` and `Icons` to `Slider`
+- Added `IconColor` and `IconShape` to `Tab`
+- Added `IconSize` to `Toggle` element
+- Added Animation to `Toggle` element
+- Added `KeyValidator` to `KeySystem`
+- Added `WindUI:SetParent()`
+- Added `Topbar` to `Window` (Mac-style buttons and custom height)
+- Added Auto Load Config
+- Fixed `OpenButton` sizes (and others)
+- Fixed Toggle Icon
+- Fixed Section AutoHeight
+- Fixed Icons
+- Removed animation for themes (it causes lags)
+- Removed tween in themes (they lag)
+- Removed Outline in Tab
+- The Slider is now a little bigger
+- Small changes in the `Tooltip`
+- Some fixes in `Group` element
+- `Toggle` now smaller in size
+- More Fallbacks in Themes

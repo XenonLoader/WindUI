@@ -4,7 +4,11 @@ local Creator = require("../../modules/Creator")
 local New = Creator.New
 local Tween = Creator.Tween
 
-local UserInputService = game:GetService("UserInputService")
+
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
+
+local UserInputService = cloneref(game:GetService("UserInputService"))
 
 
 function OpenButton.New(Window)
@@ -79,9 +83,9 @@ function OpenButton.New(Window)
         ZIndex = 99,
         BackgroundColor3 = Color3.new(0,0,0),
     }, {
-        -- New("UIScale", {
-        --     Scale = 1.05,
-        -- }),
+        New("UIScale", {
+            Scale = 1,
+        }),
 	    New("UICorner", {
             CornerRadius = UDim.new(1,0)
         }),
@@ -191,7 +195,7 @@ function OpenButton.New(Window)
             Enabled = OpenButtonConfig.Enabled,
             Position = OpenButtonConfig.Position,
             OnlyIcon = OpenButtonConfig.OnlyIcon or false,
-            Draggable = OpenButtonConfig.Draggable,
+            Draggable = OpenButtonConfig.Draggable or nil,
             OnlyMobile = OpenButtonConfig.OnlyMobile,
             CornerRadius = OpenButtonConfig.CornerRadius or UDim.new(1, 0),
             StrokeThickness = OpenButtonConfig.StrokeThickness or 2,
@@ -225,10 +229,14 @@ function OpenButton.New(Window)
             Container.Position = OpenButtonModule.Position
         end
         
-        if OpenButtonModule.OnlyIcon and Title then
+        if OpenButtonModule.OnlyIcon == true and Title then
             Title.Visible = false
             Button.TextButton.UIPadding.PaddingLeft = UDim.new(0,7)
             Button.TextButton.UIPadding.PaddingRight = UDim.new(0,7)
+        elseif OpenButtonModule.OnlyIcon == false then
+            Title.Visible = true
+            Button.TextButton.UIPadding.PaddingLeft = UDim.new(0,7+4)
+            Button.TextButton.UIPadding.PaddingRight = UDim.new(0,7+4)
         end
         
         --OpenButtonMain:Visible((not OpenButtonModule.OnlyMobile) or (not Window.IsPC))

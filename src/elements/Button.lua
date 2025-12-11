@@ -37,6 +37,7 @@ function Element:New(Config)
         Tab = Config.Tab,
         Index = Config.Index,
         ElementTable = Button,
+        ParentConfig = Config,
     })
     
     -- Button.UIElements.ButtonIcon = New("ImageLabel",{

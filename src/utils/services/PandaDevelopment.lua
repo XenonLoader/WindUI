@@ -6,12 +6,16 @@
     
 ]]
 
-local HttpService = game:GetService("HttpService")
+
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
+local HttpService = cloneref(game:GetService("HttpService"))
 local PandaDevelopment = {}
 
 
+
 function PandaDevelopment.New(serviceId)
-    local hwid = gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
+    local hwid = gethwid or function() return cloneref(game:GetService("Players")).LocalPlayer.UserId end
     local frequest, fsetclipboard = request or http_request or syn_request, setclipboard or toclipboard
 
     function ValidateKey(key)

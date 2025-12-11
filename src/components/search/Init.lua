@@ -1,4 +1,6 @@
-local UserInputService = game:GetService("UserInputService")
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
+local UserInputService = cloneref(game:GetService("UserInputService"))
 
 local SearchBar = {
     Margin = 8,

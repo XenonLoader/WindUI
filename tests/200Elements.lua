@@ -1,4 +1,4 @@
-local WindUI = require("../src/init")
+local WindUI = require("../src/Init")
 
 
 local Window = WindUI:CreateWindow({
@@ -8,6 +8,7 @@ local Window = WindUI:CreateWindow({
     Size = UDim2.fromOffset(800, 600),
     Resizable = true,
 })
+
 
 local Tab = Window:Tab({ Title = "Elements" })
 

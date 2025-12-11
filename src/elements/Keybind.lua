@@ -1,4 +1,6 @@
-local UserInputService = game:GetService("UserInputService")
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
+local UserInputService = cloneref(game:GetService("UserInputService"))
 
 local Creator = require("../modules/Creator")
 local New = Creator.New
@@ -36,6 +38,7 @@ function Element:New(Config)
         Index = Config.Index,
         Window = Config.Window,
         ElementTable = Keybind,
+        ParentConfig = Config,
     })
     
     Keybind.UIElements.Keybind = CreateLabel(Keybind.Value, nil, Keybind.KeybindFrame.UIElements.Main)
@@ -66,7 +69,7 @@ function Element:New(Config)
     function Keybind:Lock()
         Keybind.Locked = true
         CanCallback = false
-        return Keybind.KeybindtrueFrame:Lock()
+        return Keybind.KeybindFrame:Lock()
     end
     function Keybind:Unlock()
         Keybind.Locked = false
@@ -94,38 +97,52 @@ function Element:New(Config)
                 local Event
                 Event = UserInputService.InputBegan:Connect(function(Input)
                     local Key
-            
+                    
                     if Input.UserInputType == Enum.UserInputType.Keyboard then
-	                    Key = Input.KeyCode.Name
+                        Key = Input.KeyCode.Name
                     elseif Input.UserInputType == Enum.UserInputType.MouseButton1 then
-	                    Key = "MouseLeft"
+                        Key = "MouseLeft"
                     elseif Input.UserInputType == Enum.UserInputType.MouseButton2 then
-	                    Key = "MouseRight"
+                        Key = "MouseRight"
                     end
-            
+                    
                     local EndedEvent
                     EndedEvent = UserInputService.InputEnded:Connect(function(Input)
-	                    if Input.KeyCode.Name == Key or Key == "MouseLeft" and Input.UserInputType == Enum.UserInputType.MouseButton1 or Key == "MouseRight" and Input.UserInputType == Enum.UserInputType.MouseButton2 then
-		                    Keybind.Picking = false
-		    
-		                    Keybind.UIElements.Keybind.Frame.Frame.TextLabel.Text = Key
-		                    Keybind.Value = Key
-		
-		                    Event:Disconnect()
-		                    EndedEvent:Disconnect()
-	                    end
+                        if Input.KeyCode.Name == Key or Key == "MouseLeft" and Input.UserInputType == Enum.UserInputType.MouseButton1 or Key == "MouseRight" and Input.UserInputType == Enum.UserInputType.MouseButton2 then
+                            Keybind.Picking = false
+                            
+                            Keybind.UIElements.Keybind.Frame.Frame.TextLabel.Text = Key
+                            Keybind.Value = Key
+                            
+                            Event:Disconnect()
+                            EndedEvent:Disconnect()
+                        end
                     end)
                 end)
             end
         end
     end) 
-    Creator.AddSignal(UserInputService.InputBegan, function(input)
-        if CanCallback then
+        
+    Creator.AddSignal(UserInputService.InputBegan, function(input, gpe)
+        if UserInputService:GetFocusedTextBox() then 
+            return 
+        end
+    
+        if not CanCallback then
+            return
+        end
+    
+        if input.UserInputType == Enum.UserInputType.Keyboard then
             if input.KeyCode.Name == Keybind.Value then
                 Creator.SafeCallback(Keybind.Callback, input.KeyCode.Name)
             end
+        elseif input.UserInputType == Enum.UserInputType.MouseButton1 and Keybind.Value == "MouseLeft" then
+            Creator.SafeCallback(Keybind.Callback, "MouseLeft")
+        elseif input.UserInputType == Enum.UserInputType.MouseButton2 and Keybind.Value == "MouseRight" then
+            Creator.SafeCallback(Keybind.Callback, "MouseRight")
         end
     end)
+    
     return Keybind.__type, Keybind
 end
 

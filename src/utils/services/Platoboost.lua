@@ -18,6 +18,8 @@ local lEncode, lDecode, lDigest = a3, aw, Z;
 
 local Platoboost = {}
 
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+
 
 function Platoboost.New(Service, Secret)
     --! configuration
@@ -33,16 +35,16 @@ function Platoboost.New(Service, Secret)
     
     --! functions
     local requestSending = false;
-    local fSetClipboard, fRequest, fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor, fGetHwid = setclipboard or toclipboard, request or http_request or syn_request, string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
+    local fSetClipboard, fRequest, fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor, fGetHwid = setclipboard or toclipboard, request or http_request or syn_request, string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function() return cloneref(game:GetService("Players")).LocalPlayer.UserId end
     local cachedLink, cachedTime = "", 0;
     
     --! pick host
-    local host = "https://api.platoboost.com";
+    local host = "https://api.platoboost.app";
     local hostResponse = fRequest({
         Url = host .. "/public/connectivity",
         Method = "GET"
     });
-    if hostResponse.StatusCode ~= 200 or hostResponse.StatusCode ~= 429 then
+    if hostResponse.StatusCode ~= 200 and hostResponse.StatusCode ~= 429 then
         host = "https://api.platoboost.net";
     end
     

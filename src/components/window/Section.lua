@@ -154,6 +154,12 @@ function Section.New(SectionConfig, Parent, Folder, UIScale, Window)
         end
     end)
     
+    Creator.AddSignal(SectionFrame.Content.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+        if SectionModule.Opened then
+            SectionModule:Open()
+        end
+    end)
+    
     if SectionModule.Opened then
         task.spawn(function()
             task.wait()
