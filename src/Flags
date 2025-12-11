@@ -94,19 +94,19 @@ ConfigManager = {
 
 function ConfigManager:Init(Window)
     if not Window.Folder then
-        warn("[ WindUI.ConfigManager ] Window.Folder is not specified.")
+        warn("[ Avantrix.ConfigManager ] Window.Folder is not specified.")
         
         return false
     end
     
     ConfigManager.Window = Window
     ConfigManager.Folder = Window.Folder
-    ConfigManager.Path = "WindUI/" .. tostring(ConfigManager.Folder) .. "/config/"
+    ConfigManager.Path = "Avantrix/" .. tostring(ConfigManager.Folder) .. "/config/"
     
     -- Create folder if it doesn't exist
     pcall(function()
-        makefolder("WindUI")
-        makefolder("WindUI/" .. tostring(ConfigManager.Folder))
+        makefolder("Avantrix")
+        makefolder("Avantrix/" .. tostring(ConfigManager.Folder))
         makefolder(ConfigManager.Path)
     end)
 

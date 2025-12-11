@@ -1,5 +1,17 @@
 --[[
-xenon
+     _      ___         ____  ______
+    | | /| / (_)__  ___/ / / / /  _/
+    | |/ |/ / / _ \/ _  / /_/ // /  
+    |__/|__/_/_//_/\_,_/\____/___/
+    
+    v1.6.62  |  2025-12-11  |  Roblox UI Library for scripts
+    
+    To view the source code, see the `src/` folder on the official GitHub repository.
+    
+    Author: Footagesus (Footages, .ftgs, oftgs)
+    Github: https://github.com/Footagesus/WindUI
+    Discord: https://discord.gg/ftgs-development-hub-1300692552005189632
+    License: MIT
 ]]
 
 local a a={cache={}, load=function(b)if not a.cache[b]then a.cache[b]={c=a[b]()}end return a.cache[b].c end}do function a.a()return{
@@ -10367,11 +10379,11 @@ as.Topbar={Height=52,ButtonsType="Default"}
 end
 
 if as.Folder then
-if not isfolder("WindUI/"..as.Folder)then
-makefolder("WindUI/"..as.Folder)
+if not isfolder("Avantrix/"..as.Folder)then
+makefolder("Avantrix/"..as.Folder)
 end
-if not isfolder("WindUI/"..as.Folder.."/assets")then
-makefolder("WindUI/"..as.Folder.."/assets")
+if not isfolder("Avantrix/"..as.Folder.."/assets")then
+makefolder("Avantrix/"..as.Folder.."/assets")
 end
 if not isfolder(as.Folder)then
 makefolder(as.Folder)
