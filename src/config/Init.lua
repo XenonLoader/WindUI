@@ -40,27 +40,53 @@ local ConfigManager = {
                     local value = data.value
                     local isMulti = data.multi or element.Multi
 
-                    task.spawn(function()
-                        if isMulti and type(value) == "table" then
-                            if element.Select then
-                                element:Select(value)
-                            end
-                        else
-                            local singleValue = value
-                            if type(value) == "table" and #value > 0 then
-                                singleValue = value[1]
-                            end
+                    if isMulti and type(value) == "table" then
+                        local originalCallback = element.Callback
+                        element.Callback = function() end
 
-                            if element.Select then
-                                element:Select(singleValue)
+                        element.Value = {}
+                        element:Display()
+
+                        task.wait(0.1)
+
+                        for _, item in ipairs(value) do
+                            local found = false
+                            for _, existing in ipairs(element.Value) do
+                                if existing == item then
+                                    found = true
+                                    break
+                                end
+                            end
+                            if not found then
+                                table.insert(element.Value, item)
                             end
                         end
 
-                        task.wait(0.05)
+                        element:Display()
+
+                        task.wait(0.1)
+                        element.Callback = originalCallback
+
                         if element.Callback then
-                            element.Callback(value)
+                            task.spawn(function()
+                                element.Callback(value)
+                            end)
                         end
-                    end)
+                    else
+                        local singleValue = value
+                        if type(value) == "table" and #value > 0 then
+                            singleValue = value[1]
+                        end
+
+                        element:Select(singleValue)
+
+                        task.spawn(function()
+                            task.wait(0.1)
+                            if element.Callback then
+                                element.Callback(singleValue)
+                            end
+                        end)
+                    end
                 end
             end
         },
