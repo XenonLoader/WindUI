@@ -9,20 +9,41 @@ local ConfigManager = {
     Parser = {
         Colorpicker = {
             Save = function(obj)
+                local color = obj.Value or obj.Default or Color3.new(1, 1, 1)
+                local colorHex
+
+                -- Handle different color storage methods
+                if type(color) == "table" and color.ToHex then
+                    colorHex = color:ToHex()
+                elseif typeof(color) == "Color3" then
+                    colorHex = "#" .. color:ToHex()
+                else
+                    colorHex = "#FFFFFF"
+                end
+
                 return {
                     __type = obj.__type,
-                    value = obj.Default:ToHex(),
-                    transparency = obj.Transparency or nil,
+                    value = colorHex,
+                    transparency = obj.Transparency or obj.Alpha or nil,
                 }
             end,
             Load = function(element, data)
                 if element then
-                    element:Update(Color3.fromHex(data.value), data.transparency or nil)
+                    local color = Color3.fromHex(data.value)
+
+                    -- Try different update methods
+                    if element.Update then
+                        element:Update(color, data.transparency or nil)
+                    elseif element.Set then
+                        element:Set(color)
+                    elseif element.SetValue then
+                        element:SetValue(color)
+                    end
 
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
-                            element.Callback(Color3.fromHex(data.value), data.transparency)
+                            element.Callback(color, data.transparency)
                         end
                     end)
                 end
@@ -93,19 +114,27 @@ local ConfigManager = {
         },
         Input = {
             Save = function(obj)
+                local value = obj.Value or obj.Text or ""
                 return {
                     __type = obj.__type,
-                    value = obj.Value,
+                    value = tostring(value),
                 }
             end,
             Load = function(element, data)
                 if element then
-                    element:Set(data.value)
+                    local value = data.value or ""
+
+                    -- Try different set methods
+                    if element.Set then
+                        element:Set(value)
+                    elseif element.SetValue then
+                        element:SetValue(value)
+                    end
 
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
-                            element.Callback(data.value)
+                            element.Callback(value)
                         end
                     end)
                 end
@@ -113,19 +142,36 @@ local ConfigManager = {
         },
         Keybind = {
             Save = function(obj)
+                local value = obj.Value
+                -- Handle Enum.KeyCode
+                if typeof(value) == "EnumItem" then
+                    value = value.Name
+                end
                 return {
                     __type = obj.__type,
-                    value = obj.Value,
+                    value = tostring(value),
                 }
             end,
             Load = function(element, data)
                 if element then
-                    element:Set(data.value)
+                    local value = data.value
+
+                    -- Try to convert string to Enum.KeyCode
+                    if type(value) == "string" and Enum.KeyCode[value] then
+                        value = Enum.KeyCode[value]
+                    end
+
+                    -- Try different set methods
+                    if element.Set then
+                        element:Set(value)
+                    elseif element.SetValue then
+                        element:SetValue(value)
+                    end
 
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
-                            element.Callback(data.value)
+                            element.Callback(value)
                         end
                     end)
                 end
@@ -133,19 +179,30 @@ local ConfigManager = {
         },
         Slider = {
             Save = function(obj)
+                local value = obj.Value
+                -- Handle different value storage methods
+                if type(value) == "table" then
+                    value = value.Default or value.Value or value.Current or 0
+                elseif type(value) == "number" then
+                    -- Value is already a number
+                else
+                    value = tonumber(value) or 0
+                end
+
                 return {
                     __type = obj.__type,
-                    value = obj.Value.Default,
+                    value = value,
                 }
             end,
             Load = function(element, data)
                 if element then
-                    element:Set(data.value)
+                    local value = data.value or 0
+                    element:Set(value)
 
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
-                            element.Callback(data.value)
+                            element.Callback(value)
                         end
                     end)
                 end
@@ -153,19 +210,38 @@ local ConfigManager = {
         },
         Toggle = {
             Save = function(obj)
+                local value = obj.Value
+                -- Handle different value storage
+                if type(value) == "table" then
+                    value = value.Value or value.State or false
+                end
+                -- Ensure boolean
+                value = value == true
+
                 return {
                     __type = obj.__type,
-                    value = obj.Value,
+                    value = value,
                 }
             end,
             Load = function(element, data)
                 if element then
-                    element:Set(data.value)
+                    local value = data.value == true
+
+                    -- Try different set methods
+                    if element.Set then
+                        element:Set(value)
+                    elseif element.SetValue then
+                        element:SetValue(value)
+                    elseif element.Toggle then
+                        if element.Value ~= value then
+                            element:Toggle()
+                        end
+                    end
 
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
-                            element.Callback(data.value)
+                            element.Callback(value)
                         end
                     end)
                 end
@@ -217,48 +293,168 @@ function ConfigManager:CreateConfig(configFilename)
     end
 
     function ConfigModule:AutoRegisterElements()
-        if not ConfigManager.Window then 
+        if not ConfigManager.Window then
             warn("[ ConfigManager ] Window is not set")
-            return 
-        end
-        
-        if not ConfigManager.Window.AllElements then 
-            warn("[ ConfigManager ] Window.AllElements is nil or empty")
-            return 
+            return 0
         end
 
         ConfigModule.Elements = {}
+        local allElements = {}
 
+        -- DEBUG: Print Window structure
+        print("[ ConfigManager ] DEBUG: Scanning Window structure...")
+        print("[ ConfigManager ] Window type: " .. type(ConfigManager.Window))
+
+        -- Method 1: Check Window.AllElements (standard)
+        if ConfigManager.Window.AllElements and type(ConfigManager.Window.AllElements) == "table" then
+            local count = 0
+            for _ in pairs(ConfigManager.Window.AllElements) do count = count + 1 end
+            print("[ ConfigManager ] Found Window.AllElements with " .. count .. " items")
+            for _, element in pairs(ConfigManager.Window.AllElements) do
+                if type(element) == "table" then
+                    table.insert(allElements, element)
+                end
+            end
+        else
+            print("[ ConfigManager ] Window.AllElements not found or empty")
+        end
+
+        -- Method 2: Check Window.Elements (alternative)
+        if ConfigManager.Window.Elements and type(ConfigManager.Window.Elements) == "table" then
+            local count = 0
+            for _ in pairs(ConfigManager.Window.Elements) do count = count + 1 end
+            print("[ ConfigManager ] Found Window.Elements with " .. count .. " items")
+            for _, element in pairs(ConfigManager.Window.Elements) do
+                if type(element) == "table" then
+                    table.insert(allElements, element)
+                end
+            end
+        end
+
+        -- Method 3: Scan through Tabs and their elements
+        if ConfigManager.Window.Tabs and type(ConfigManager.Window.Tabs) == "table" then
+            print("[ ConfigManager ] Found Window.Tabs, scanning...")
+            for tabName, tab in pairs(ConfigManager.Window.Tabs) do
+                if type(tab) == "table" then
+                    print("[ ConfigManager ] Checking tab: " .. tostring(tabName))
+
+                    -- Check tab.Elements
+                    if tab.Elements and type(tab.Elements) == "table" then
+                        local count = 0
+                        for _ in pairs(tab.Elements) do count = count + 1 end
+                        print("[ ConfigManager ] Found " .. count .. " elements in tab.Elements: " .. tostring(tabName))
+                        for _, element in pairs(tab.Elements) do
+                            if type(element) == "table" then
+                                table.insert(allElements, element)
+                            end
+                        end
+                    end
+
+                    -- Check tab.AllElements
+                    if tab.AllElements and type(tab.AllElements) == "table" then
+                        print("[ ConfigManager ] Found tab.AllElements in: " .. tostring(tabName))
+                        for _, element in pairs(tab.AllElements) do
+                            if type(element) == "table" then
+                                table.insert(allElements, element)
+                            end
+                        end
+                    end
+                end
+            end
+        else
+            print("[ ConfigManager ] Window.Tabs not found")
+        end
+
+        -- Method 4: Recursive scan for any object with __type property
+        local function scanForElements(obj, depth, path, visited)
+            if depth > 4 or type(obj) ~= "table" or visited[obj] then return end
+            visited[obj] = true
+
+            -- Check if this object is an element
+            if obj.__type and type(obj.__type) == "string" then
+                table.insert(allElements, obj)
+            end
+
+            -- Recursively scan children
+            for k, v in pairs(obj) do
+                if type(v) == "table" and k ~= "Parent" and k ~= "Window" and k ~= "_G" then
+                    scanForElements(v, depth + 1, path .. "." .. tostring(k), visited)
+                end
+            end
+        end
+
+        if #allElements == 0 then
+            print("[ ConfigManager ] No elements found via standard methods, performing deep scan...")
+            scanForElements(ConfigManager.Window, 0, "Window", {})
+            print("[ ConfigManager ] Deep scan found " .. #allElements .. " potential elements")
+        end
+
+        print("[ ConfigManager ] Total elements found: " .. #allElements)
+
+        -- Process and filter elements
         local count = 0
-        for i, element in ipairs(ConfigManager.Window.AllElements) do
+        local seen = {}
+
+        for i, element in ipairs(allElements) do
+            -- Skip duplicates
+            if seen[element] then
+                continue
+            end
+            seen[element] = true
+
             if element and element.__type then
+                local elementType = tostring(element.__type)
+
                 -- Skip elements yang tidak perlu disimpan
-                if element.__type == "Paragraph" or 
-                   element.__type == "Button" or 
-                   element.__type == "Section" or 
-                   element.__type == "Divider" or 
-                   element.__type == "Space" or
-                   element.__type == "Image" or
-                   element.__type == "Code" then
+                if elementType == "Paragraph" or
+                   elementType == "Button" or
+                   elementType == "Section" or
+                   elementType == "Divider" or
+                   elementType == "Space" or
+                   elementType == "Image" or
+                   elementType == "Code" or
+                   elementType == "Label" or
+                   elementType == "SubLabel" or
+                   elementType == "Header" then
                     continue
                 end
-                
+
                 -- Skip jika title ada di excluded list
                 if element.Title and ConfigManager.ExcludedTitles[element.Title] then
+                    print("[ ConfigManager ] Skipped excluded: " .. tostring(element.Title))
                     continue
                 end
 
-                -- Gunakan Title sebagai key jika ada, fallback ke index
-                local elementName = element.Title or ("Element_" .. i)
-                elementName = elementName:gsub("[^%w_]", "_")
+                -- Gunakan Title sebagai key jika ada, fallback ke Flag atau index
+                local elementName = element.Title or element.Flag or ("Element_" .. i)
+                elementName = tostring(elementName):gsub("[^%w_%-% ]", "_")
+
+                -- Avoid duplicate names
+                local baseName = elementName
+                local suffix = 1
+                while ConfigModule.Elements[elementName] do
+                    elementName = baseName .. "_" .. suffix
+                    suffix = suffix + 1
+                end
 
                 ConfigModule.Elements[elementName] = element
                 count = count + 1
-                
-                print("[ ConfigManager ] Registered: " .. elementName .. " (" .. element.__type .. ")")
+
+                print("[ ConfigManager ] Registered: " .. elementName .. " (" .. elementType .. ")")
             end
         end
-        
+
+        if count == 0 then
+            warn("[ ConfigManager ] WARNING: No elements registered!")
+            warn("[ ConfigManager ] Window properties: " .. table.concat((function()
+                local props = {}
+                for k, v in pairs(ConfigManager.Window) do
+                    table.insert(props, k .. ":" .. type(v))
+                end
+                return props
+            end)(), ", "))
+        end
+
         print("[ ConfigManager ] Auto-registered " .. count .. " elements")
         return count
     end
@@ -429,6 +625,91 @@ end
 
 function ConfigManager:SetWindow(WindowTable)
     ConfigManager.Window = WindowTable
+end
+
+-- Helper function to debug Window structure
+function ConfigManager:DebugWindow()
+    if not ConfigManager.Window then
+        warn("[ ConfigManager ] Window is not set")
+        return
+    end
+
+    print("====== ConfigManager Window Debug ======")
+    print("Window type: " .. type(ConfigManager.Window))
+
+    local function printTable(tbl, indent, maxDepth, currentDepth, visited)
+        indent = indent or ""
+        maxDepth = maxDepth or 3
+        currentDepth = currentDepth or 0
+        visited = visited or {}
+
+        if currentDepth >= maxDepth then return end
+        if visited[tbl] then
+            print(indent .. "[circular reference]")
+            return
+        end
+        visited[tbl] = true
+
+        for k, v in pairs(tbl) do
+            if type(v) == "table" then
+                print(indent .. tostring(k) .. ": [table]")
+                if k ~= "Parent" and k ~= "Window" and k ~= "_G" then
+                    printTable(v, indent .. "  ", maxDepth, currentDepth + 1, visited)
+                end
+            else
+                local valueStr = tostring(v)
+                if #valueStr > 50 then
+                    valueStr = valueStr:sub(1, 50) .. "..."
+                end
+                print(indent .. tostring(k) .. ": " .. type(v) .. " = " .. valueStr)
+            end
+        end
+    end
+
+    printTable(ConfigManager.Window, "", 2)
+    print("========================================")
+end
+
+-- Helper function to manually populate AllElements if it doesn't exist
+function ConfigManager:PopulateAllElements()
+    if not ConfigManager.Window then
+        warn("[ ConfigManager ] Window is not set")
+        return
+    end
+
+    if not ConfigManager.Window.AllElements then
+        ConfigManager.Window.AllElements = {}
+    end
+
+    local function scanAndAdd(obj, visited)
+        if type(obj) ~= "table" or visited[obj] then return end
+        visited[obj] = true
+
+        -- Check if this is an element
+        if obj.__type and type(obj.__type) == "string" then
+            -- Check if not already in AllElements
+            local found = false
+            for _, el in ipairs(ConfigManager.Window.AllElements) do
+                if el == obj then
+                    found = true
+                    break
+                end
+            end
+            if not found then
+                table.insert(ConfigManager.Window.AllElements, obj)
+            end
+        end
+
+        -- Scan children
+        for k, v in pairs(obj) do
+            if type(v) == "table" and k ~= "Parent" and k ~= "Window" and k ~= "_G" then
+                scanAndAdd(v, visited)
+            end
+        end
+    end
+
+    scanAndAdd(ConfigManager.Window, {})
+    print("[ ConfigManager ] Populated AllElements with " .. #ConfigManager.Window.AllElements .. " elements")
 end
 
 return ConfigManager
