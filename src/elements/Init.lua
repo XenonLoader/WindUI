@@ -13,15 +13,12 @@ return {
         Divider     = require("./Divider"),
         Space       = require("./Space"),
         Image       = require("./Image"),
-        Group       = require("./Group"),
-        --Video       = require("./Video"),
     },
     Load = function(tbl, Container, Elements, Window, WindUI, OnElementCreateFunction, ElementsModule, UIScale, Tab)
         for name, module in next, Elements do
             tbl[name] = function(self, config)
                 config = config or {}
                 config.Tab = Tab or tbl
-                config.ParentType = tbl.__type
                 config.ParentTable = tbl
                 config.Index = #tbl.Elements + 1
                 config.GlobalIndex = #Window.AllElements + 1
@@ -33,37 +30,10 @@ return {
         
                 local elementInstance, content = module:New(config)
                 
-                if config.Flag and typeof(config.Flag) == "string" then
-                    if Window.CurrentConfig then
-                        Window.CurrentConfig:Register(config.Flag, content)
-                        
-                        if Window.PendingConfigData and Window.PendingConfigData[config.Flag] then
-                            local data = Window.PendingConfigData[config.Flag]
-                            
-                            local ConfigManager = Window.ConfigManager
-                            if ConfigManager.Parser[data.__type] then
-                                task.defer(function()
-                                    local success, err = pcall(function()
-                                        ConfigManager.Parser[data.__type].Load(content, data)
-                                    end)
-                                    
-                                    if success then
-                                        Window.PendingConfigData[config.Flag] = nil
-                                    else
-                                        warn("[ WindUI ] Failed to apply pending config for '" .. config.Flag .. "': " .. tostring(err))
-                                    end
-                                end)
-                            end
-                        end
-                    else
-                        Window.PendingFlags = Window.PendingFlags or {}
-                        Window.PendingFlags[config.Flag] = content
-                    end
-                end
                 
                 local frame
-                for key, value in next, content do
-                    if typeof(value) == "table" and key ~= "ElementFrame" and key:match("Frame$") then
+                for key, value in pairs(content) do
+                    if typeof(value) == "table" and key:match("Frame$") then
                         frame = value
                         break
                     end
@@ -81,18 +51,37 @@ return {
                         frame:Highlight()
                     end
                     function content:Destroy()
-                        frame:Destroy()
-                        
-                        table.remove(Window.AllElements, config.GlobalIndex)
-                        table.remove(tbl.Elements, config.Index)
-                        table.remove(Tab.Elements, config.Index)
+                        for i, elem in ipairs(Window.AllElements) do
+                            if elem == content then
+                                table.remove(Window.AllElements, i)
+                                break
+                            end
+                        end
+
+                        for i, elem in ipairs(tbl.Elements) do
+                            if elem == content then
+                                table.remove(tbl.Elements, i)
+                                break
+                            end
+                        end
+
+                        if Tab then
+                            for i, elem in ipairs(Tab.Elements) do
+                                if elem == content then
+                                    table.remove(Tab.Elements, i)
+                                    break
+                                end
+                            end
+                        end
+
                         tbl:UpdateAllElementShapes(tbl)
+                        frame:Destroy()
                     end
                 end
                 
-                
-                
-                Window.AllElements[config.Index] = content
+
+
+                Window.AllElements[config.GlobalIndex] = content
                 tbl.Elements[config.Index] =  content
                 if Tab then Tab.Elements[config.Index] =  content end
                 
@@ -101,7 +90,7 @@ return {
                 end
                 
                 if OnElementCreateFunction then
-                    OnElementCreateFunction(content, tbl.Elements)
+                    OnElementCreateFunction()
                 end
                 return content
             end
