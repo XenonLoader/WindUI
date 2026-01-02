@@ -166,11 +166,11 @@ function ConfigManager:Init(WindowTable)
     end
     
     ConfigManager.Folder = WindowTable.Folder
-    ConfigManager.Path = "WindUI/" .. tostring(ConfigManager.Folder) .. "/configs/"
+    ConfigManager.Path = "Avantrix/" .. tostring(ConfigManager.Folder) .. "/configs/"
     ConfigManager.Window = WindowTable
     
-    if not isfolder("WindUI/" .. ConfigManager.Folder) then
-        makefolder("WindUI/" .. ConfigManager.Folder)
+    if not isfolder("Avantrix/" .. ConfigManager.Folder) then
+        makefolder("Avantrix/" .. ConfigManager.Folder)
     end
     if not isfolder(ConfigManager.Path) then
         makefolder(ConfigManager.Path)
