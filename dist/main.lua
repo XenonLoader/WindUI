@@ -1,5 +1,18 @@
 --[[
-Avantrix WindUI Library
+ ________      ___      ___  ________      ________       _________    ________      ___      ___    ___ 
+|\   __  \    |\  \    /  /||\   __  \    |\   ___  \    |\___   ___\ |\   __  \    |\  \    |\  \  /  /|
+\ \  \|\  \   \ \  \  /  / /\ \  \|\  \   \ \  \\ \  \   \|___ \  \_| \ \  \|\  \   \ \  \   \ \  \/  / /
+ \ \   __  \   \ \  \/  / /  \ \   __  \   \ \  \\ \  \       \ \  \   \ \   _  _\   \ \  \   \ \    / / 
+  \ \  \ \  \   \ \    / /    \ \  \ \  \   \ \  \\ \  \       \ \  \   \ \  \\  \|   \ \  \   /     \/  
+   \ \__\ \__\   \ \__/ /      \ \__\ \__\   \ \__\\ \__\       \ \__\   \ \__\\ _\    \ \__\ /  /\   \  
+    \|__|\|__|    \|__|/        \|__|\|__|    \|__| \|__|        \|__|    \|__|\|__|    \|__|/__/ /\ __\ 
+                                                                                             |__|/ \|__| 
+                                                                                                         
+                                                                                                         
+    
+    v1.6.64  |  2026-01-03
+    
+    Author: Avantrix
 ]]
 
 local a={cache={}::any}do do local function __modImpl()return{
@@ -3911,183 +3924,179 @@ end
 
 
 return aa end function a.w():typeof(__modImpl())local aa=a.cache.w if not aa then aa={c=__modImpl()}a.cache.w=aa end return aa.c end end do local function __modImpl()
-local aa=(cloneref or clonereference or function(aa)return aa end)
+local aa=game:GetService"HttpService"
 
-local ab=aa(game:GetService"HttpService")
-
-local ac
-
-local ad
-ad={
+local ab={
 Folder=nil,
 Path=nil,
 Configs={},
 ExcludedTitles={},
+Window=nil,
 Parser={
 Colorpicker={
-Save=function(ae)
-local af=ae.Default or Color3.new(1,1,1)
-local ag
+Save=function(ab)
+local ac=ab.Default or Color3.new(1,1,1)
+local ad
 
-if typeof(af)=="Color3"then
-ag="#"..af:ToHex()
+if typeof(ac)=="Color3"then
+ad="#"..ac:ToHex()
 else
-ag="#FFFFFF"
+ad="#FFFFFF"
 end
 
 return{
-__type=ae.__type,
-value=ag,
-transparency=ae.Transparency or nil,
+__type=ab.__type,
+value=ad,
+transparency=ab.Transparency or nil,
 }
 end,
-Load=function(ae,af)
-if ae and ae.Update then
-local ag=Color3.fromHex(af.value)
-ae:Update(ag,af.transparency or nil)
+Load=function(ab,ac)
+if ab and ab.Update then
+local ad=Color3.fromHex(ac.value)
+ab:Update(ad,ac.transparency or nil)
 
 task.spawn(function()
 task.wait(0.05)
-if ae.Callback then
-ae.Callback(ag,af.transparency)
+if ab.Callback then
+ab.Callback(ad,ac.transparency)
 end
 end)
 end
 end
 },
 Dropdown={
-Save=function(ae)
+Save=function(ab)
 return{
-__type=ae.__type,
-value=ae.Value,
-multi=ae.Multi or false,
+__type=ab.__type,
+value=ab.Value,
+multi=ab.Multi or false,
 }
 end,
-Load=function(ae,af)
-if ae and ae.Select then
-local ag=af.value
+Load=function(ab,ac)
+if ab and ab.Select then
+local ad=ac.value
 
 task.spawn(function()
-ae:Select(ag)
+ab:Select(ad)
 
 task.wait(0.1)
-if ae.Callback then
-ae.Callback(ag)
+if ab.Callback then
+ab.Callback(ad)
 end
 end)
 end
 end
 },
 Input={
-Save=function(ae)
+Save=function(ab)
 return{
-__type=ae.__type,
-value=tostring(ae.Value or""),
+__type=ab.__type,
+value=tostring(ab.Value or""),
 }
 end,
-Load=function(ae,af)
-if ae and ae.Set then
-ae:Set(af.value or"")
+Load=function(ab,ac)
+if ab and ab.Set then
+ab:Set(ac.value or"")
 
 task.spawn(function()
 task.wait(0.05)
-if ae.Callback then
-ae.Callback(af.value)
+if ab.Callback then
+ab.Callback(ac.value)
 end
 end)
 end
 end
 },
 Keybind={
-Save=function(ae)
-local af=ae.Value
-if typeof(af)=="EnumItem"then
-af=af.Name
+Save=function(ab)
+local ac=ab.Value
+if typeof(ac)=="EnumItem"then
+ac=ac.Name
 end
 return{
-__type=ae.__type,
-value=tostring(af),
+__type=ab.__type,
+value=tostring(ac),
 }
 end,
-Load=function(ae,af)
-if ae and ae.Set then
-local ag=af.value
+Load=function(ab,ac)
+if ab and ab.Set then
+local ad=ac.value
 
-if type(ag)=="string"and Enum.KeyCode[ag]then
-ag=Enum.KeyCode[ag]
+if type(ad)=="string"and Enum.KeyCode[ad]then
+ad=Enum.KeyCode[ad]
 end
 
-ae:Set(ag)
+ab:Set(ad)
 
 task.spawn(function()
 task.wait(0.05)
-if ae.Callback then
-ae.Callback(ag)
+if ab.Callback then
+ab.Callback(ad)
 end
 end)
 end
 end
 },
 Slider={
-Save=function(ae)
-local af=ae.Value
-if type(af)=="table"then
-af=af.Default or 0
+Save=function(ab)
+local ac=ab.Value
+if type(ac)=="table"then
+ac=ac.Default or 0
 end
 
 return{
-__type=ae.__type,
-value=tonumber(af)or 0,
+__type=ab.__type,
+value=tonumber(ac)or 0,
 }
 end,
-Load=function(ae,af)
-if ae and ae.Set then
-ae:Set(af.value or 0)
+Load=function(ab,ac)
+if ab and ab.Set then
+ab:Set(ac.value or 0)
 
 task.spawn(function()
 task.wait(0.05)
-if ae.Callback then
-ae.Callback(af.value)
+if ab.Callback then
+ab.Callback(ac.value)
 end
 end)
 end
 end
 },
 Toggle={
-Save=function(ae)
+Save=function(ab)
 return{
-__type=ae.__type,
-value=ae.Value==true,
+__type=ab.__type,
+value=ab.Value==true,
 }
 end,
-Load=function(ae,af)
-if ae and ae.Set then
-ae:Set(af.value==true)
+Load=function(ab,ac)
+if ab and ab.Set then
+ab:Set(ac.value==true)
 
 task.spawn(function()
 task.wait(0.05)
-if ae.Callback then
-ae.Callback(af.value)
+if ab.Callback then
+ab.Callback(ac.value)
 end
 end)
 end
 end
 },
 Section={
-Save=function(ae)
+Save=function(ab)
 return{
-__type=ae.__type,
-opened=ae.Opened==true,
+__type=ab.__type,
+opened=ab.Opened==true,
 }
 end,
-Load=function(ae,af)
-if ae then
+Load=function(ab,ac)
+if ab then
 task.spawn(function()
 task.wait(0.1)
-if af.opened and ae.Open then
-ae:Open()
-elseif not af.opened and ae.Close then
-ae:Close()
+if ac.opened and ab.Open then
+ab:Open()
+elseif not ac.opened and ab.Close then
+ab:Close()
 end
 end)
 end
@@ -4096,493 +4105,163 @@ end
 }
 }
 
-function ad.Init(ae,af)
-if not af.Folder then
-warn"[ WindUI.ConfigManager ] Window.Folder is not specified."
+function ab.Init(ac,ad)
+if not ad.Folder then
+warn"[ ConfigManager ] Window.Folder is not specified."
 return false
 end
 
-ac=af
-ad.Folder=ac.Folder
-ad.Path="Avantrix/"..tostring(ad.Folder).."/config/"
+ab.Folder=ad.Folder
+ab.Path="Avantrix/"..tostring(ab.Folder).."/configs/"
+ab.Window=ad
 
-if not isfolder("Avantrix/"..ad.Folder)then
-makefolder("Avantrix/"..ad.Folder)
+if not isfolder("Avantrix/"..ab.Folder)then
+makefolder("Avantrix/"..ab.Folder)
 end
-if not isfolder(ad.Path)then
-makefolder(ad.Path)
+if not isfolder(ab.Path)then
+makefolder(ab.Path)
 end
-
-
-if not ac.AllElements then
-ac.AllElements={}
-warn"[ WindUI.ConfigManager ] Window.AllElements was not initialized, created empty table"
+return ab
 end
 
-local ag=ad:AllConfigs()
-
-for ah,ai in next,ag do
-local aj=ad.Path..ai..".json"
-if isfile and readfile and isfile(aj)then
-ad.Configs[ai]=readfile(aj)
-end
-end
-
-print("[ WindUI.ConfigManager ] Initialized with Window.Folder: "..ac.Folder)
-
-return ad
-end
-
-function ad.DebugElements(ae)
-if not ac then
-warn"[ WindUI.ConfigManager ] Window is not set"
-return
-end
-
-print"[ WindUI.ConfigManager ] ===== DEBUG ELEMENTS ====="
-
-
-if ac.AllElements then
-local af=0
-for ag,ah in pairs(ac.AllElements)do
-af=af+1
-end
-print("[ WindUI.ConfigManager ] Window.AllElements: "..af.." elements")
-for ag,ah in pairs(ac.AllElements)do
-print("  - "..tostring(ah.Title or"No Title").." ("..tostring(ah.__type)..")")
-end
-else
-warn"[ WindUI.ConfigManager ] Window.AllElements is nil"
-end
-
-print""
-
-
-if ac.Tabs then
-local af=0
-for ag in pairs(ac.Tabs)do
-af=af+1
-end
-print("[ WindUI.ConfigManager ] Window.Tabs: "..af.." tabs")
-for ag,ah in pairs(ac.Tabs)do
-local ai=0
-if ah.Elements then
-for aj in pairs(ah.Elements)do
-ai=ai+1
-end
-end
-print("  Tab #"..ag..": "..(ah.Title or"Unnamed").." ("..ai.." elements)")
-if ah.Elements then
-for aj,ak in pairs(ah.Elements)do
-local al=ad.Parser[ak.__type]~=nil
-print("    - "..tostring(ak.Title or"No Title").." ("..tostring(ak.__type)..") [Parser: "..tostring(al).."]")
-end
-end
-end
-else
-warn"[ WindUI.ConfigManager ] Window.Tabs is nil"
-end
-
-print"[ WindUI.ConfigManager ] ==========================="
-end
-
-function ad.CreateConfig(ae,af,ag)
-local ah={
-Path=ad.Path..af..".json",
+function ab.CreateConfig(ac,ad)
+local ae={
+Path=ab.Path..ad..".json",
 Elements={},
 CustomData={},
-AutoLoad=ag or false,
 Version=1.3,
 AutoRegisterEnabled=true
 }
 
-if not af then
+if not ad then
 return false,"No config file is selected"
 end
 
-function ah.SetAsCurrent(ai)
-ac:SetCurrentConfig(ah)
-end
-
-function ah.AutoRegisterElements(ai)
-if not ac then
-warn"[ WindUI.ConfigManager ] Window is not set"
+function ae.AutoRegisterElements(af)
+if not ab.Window then
+warn"[ ConfigManager ] Window is not set"
 return 0
 end
 
-ah.Elements={}
-local aj=0
-local ak={}
+ae.Elements={}
+local ag=0
 
 
-if ac.AllElements then
-local al=0
-for am,an in pairs(ac.AllElements)do
-al=al+1
+if ab.Window.AllElements then
+for ah,ai in ipairs(ab.Window.AllElements)do
+if ai and ai.__type and ab.Parser[ai.__type]then
+if ai.Title and not ab.ExcludedTitles[ai.Title]then
+local aj=ai.Title or("Element_"..ah)
+ae.Elements[aj]=ai
+ag=ag+1
+end
+end
+end
+end
+return ag
 end
 
-print("[ WindUI.ConfigManager ] Found "..al.." elements in Window.AllElements")
-
-for am,an in pairs(ac.AllElements)do
-if an and an.__type then
-if ad.Parser[an.__type]then
-if an.Title and not ad.ExcludedTitles[an.Title]then
-local ao=an.Title
-if not ak[ao]then
-ah.Elements[ao]=an
-ak[ao]=true
-aj=aj+1
-print("[ WindUI.ConfigManager ] Registered element: "..ao.." (Type: "..an.__type..")")
-end
-else
-if not an.Title then
-print("[ WindUI.ConfigManager ] Skipped element (No Title): Type = "..an.__type)
-elseif ad.ExcludedTitles[an.Title]then
-print("[ WindUI.ConfigManager ] Skipped element (Excluded): "..an.Title)
-end
-end
-else
-print("[ WindUI.ConfigManager ] Skipped element (No Parser): Type = "..tostring(an.__type))
-end
-end
-end
-else
-warn"[ WindUI.ConfigManager ] Window.AllElements is nil"
+function ae.Register(af,ag,ah)
+ae.Elements[ag]=ah
 end
 
-
-if ac.Tabs then
-print"[ WindUI.ConfigManager ] Scanning elements from all Tabs"
-for al,am in pairs(ac.Tabs)do
-if am.Elements then
-print("[ WindUI.ConfigManager ] Scanning Tab #"..al.." ("..(am.Title or"Unnamed")..") - "..#am.Elements.." elements")
-for an,ao in pairs(am.Elements)do
-if ao and ao.__type then
-if ad.Parser[ao.__type]then
-if ao.Title and not ad.ExcludedTitles[ao.Title]then
-local ap=ao.Title
-if not ak[ap]then
-ah.Elements[ap]=ao
-ak[ap]=true
-aj=aj+1
-print("[ WindUI.ConfigManager ] Registered element from Tab: "..ap.." (Type: "..ao.__type..")")
-else
-print("[ WindUI.ConfigManager ] Skipped duplicate element: "..ap)
-end
-else
-if not ao.Title then
-print("[ WindUI.ConfigManager ] Skipped element from Tab (No Title): Type = "..ao.__type)
-elseif ad.ExcludedTitles[ao.Title]then
-print("[ WindUI.ConfigManager ] Skipped element from Tab (Excluded): "..ao.Title)
-end
-end
-else
-print("[ WindUI.ConfigManager ] Skipped element from Tab (No Parser): Type = "..tostring(ao.__type))
-end
-end
-end
-else
-print("[ WindUI.ConfigManager ] Tab #"..al.." has no Elements table")
-end
-end
-else
-warn"[ WindUI.ConfigManager ] Window.Tabs is nil"
+function ae.Set(af,ag,ah)
+ae.CustomData[ag]=ah
 end
 
-print("[ WindUI.ConfigManager ] AutoRegister completed: "..aj.." elements registered")
-return aj
+function ae.Get(af,ag)
+return ae.CustomData[ag]
 end
 
-function ah.Register(ai,aj,ak)
-ah.Elements[aj]=ak
+function ae.Save(af)
+if ae.AutoRegisterEnabled then
+ae:AutoRegisterElements()
 end
 
-function ah.Set(ai,aj,ak)
-ah.CustomData[aj]=ak
-end
-
-function ah.Get(ai,aj)
-return ah.CustomData[aj]
-end
-
-function ah.SetAutoLoad(ai,aj)
-ah.AutoLoad=aj
-end
-
-function ah.Save(ai)
-if ah.AutoRegisterEnabled then
-local aj=ah:AutoRegisterElements()
-print("[ WindUI.ConfigManager ] Auto-registered "..aj.." elements before save")
-end
-
-print"[ WindUI.ConfigManager ] ===== SAVING CONFIG ====="
-print("[ WindUI.ConfigManager ] Total elements to save: "..(function()local aj=0;for ak in pairs(ah.Elements)do aj=aj+1 end;return aj end)())
-
-
-local aj=ah.Path:match"([^/\\]+)%.json$"
-if not aj then
-aj=ah.Path:match"([^/\\]+)$":gsub("%.json$","")
-end
-
-local ak={
-__version=ah.Version,
+local ag={
+__version=ae.Version,
 __elements={},
-__autoload=ah.AutoLoad,
-__configname=aj,
-__custom=ah.CustomData
+__custom=ae.CustomData
 }
 
-local al=0
-local am={}
-for an,ao in pairs(ah.Elements)do
-if ao.__type and ad.Parser[ao.__type]then
-local ap,aq=pcall(function()
-return ad.Parser[ao.__type].Save(ao)
+for ah,ai in pairs(ae.Elements)do
+if ai.__type and ab.Parser[ai.__type]then
+local aj,ak=pcall(function()
+return ab.Parser[ai.__type].Save(ai)
 end)
 
-if ap and aq then
-ak.__elements[tostring(an)]=aq
-al=al+1
-am[ao.__type]=(am[ao.__type]or 0)+1
-print("[ WindUI.ConfigManager ] Saved: "..an.." ("..ao.__type..")")
+if aj then
+ag.__elements[tostring(ah)]=ak
 else
-warn("[ WindUI.ConfigManager ] Failed to save "..an..": "..tostring(aq))
+warn("[ ConfigManager ] Failed to save "..ah)
 end
-else
-warn("[ WindUI.ConfigManager ] Cannot save "..an.." (missing __type or parser)")
 end
 end
 
-print"[ WindUI.ConfigManager ] ===== SAVE SUMMARY ====="
-print("[ WindUI.ConfigManager ] Config Name: "..tostring(aj))
-for an,ao in pairs(am)do
-print("[ WindUI.ConfigManager ] "..an..": "..ao.." elements")
-end
-print("[ WindUI.ConfigManager ] Total saved: "..al.." elements")
-
-local an,ao=pcall(function()
-return ab:JSONEncode(ak)
+local ah,ai=pcall(function()
+return aa:JSONEncode(ag)
 end)
 
-if an and writefile then
-writefile(ah.Path,ao)
-print("[ WindUI.ConfigManager ] Config saved to: "..ah.Path)
-print"[ WindUI.ConfigManager ] =========================="
-return ak
-else
-warn("[ WindUI.ConfigManager ] Failed to write config file: "..tostring(ao))
+if ah and writefile then
+writefile(ae.Path,ai)
+return true
 end
 
 return false
 end
 
-function ah.Load(ai)
-if isfile and not isfile(ah.Path)then
+function ae.Load(af)
+if not isfile(ae.Path)then
 return false,"Config file does not exist"
 end
 
-local aj,ak=pcall(function()
-local aj=readfile or function()
-warn"[ WindUI.ConfigManager ] The config system doesn't work in the studio."
-return nil
-end
-return ab:JSONDecode(aj(ah.Path))
+local ag,ah=pcall(function()
+return aa:JSONDecode(readfile(ae.Path))
 end)
 
-if not aj then
-return false,"Failed to parse config file"
+if not ag then
+return false,"Failed to parse config"
 end
 
-if not ak.__version then
-local al={
-__version=ah.Version,
-__elements=ak,
-__custom={}
-}
-ak=al
+if ae.AutoRegisterEnabled then
+ae:AutoRegisterElements()
 end
 
-print"[ WindUI.ConfigManager ] ===== LOADING CONFIG ====="
-print("[ WindUI.ConfigManager ] Config Name: "..tostring(ak.__configname or"Unknown"))
-print("[ WindUI.ConfigManager ] Version: "..tostring(ak.__version))
-
-if ah.AutoRegisterEnabled then
-ah:AutoRegisterElements()
-end
-
-local al=0
-for am,an in pairs(ak.__elements or{})do
-if ah.Elements[am]and ad.Parser[an.__type]then
+for ai,aj in pairs(ah.__elements or{})do
+if ae.Elements[ai]and ab.Parser[aj.__type]then
 pcall(function()
-ad.Parser[an.__type].Load(ah.Elements[am],an)
-al=al+1
-print("[ WindUI.ConfigManager ] Loaded: "..am.." ("..an.__type..")")
+ab.Parser[aj.__type].Load(ae.Elements[ai],aj)
 end)
 end
 end
 
-print("[ WindUI.ConfigManager ] Total loaded: "..al.." elements")
-print"[ WindUI.ConfigManager ] =========================="
-
-ah.CustomData=ak.__custom or{}
-
-return ah.CustomData
+ae.CustomData=ah.__custom or{}
+return ae.CustomData
 end
 
-function ah.Delete(ai)
-if not delfile then
-return false,"delfile function is not available"
+ab.Configs[ad]=ae
+return ae
 end
 
-if not isfile(ah.Path)then
-return false,"Config file does not exist"
-end
-
-local aj,ak=pcall(function()
-delfile(ah.Path)
-end)
-
-if not aj then
-return false,"Failed to delete config file: "..tostring(ak)
-end
-
-ad.Configs[af]=nil
-
-if ac.CurrentConfig==ah then
-ac.CurrentConfig=nil
-end
-
-return true,"Config deleted successfully"
-end
-
-function ah.GetData(ai)
-return{
-elements=ah.Elements,
-custom=ah.CustomData,
-autoload=ah.AutoLoad
-}
-end
-
-function ah.DebugWindowElements(ai)
-return ad:DebugElements()
-end
-
-function ah.GetElementCount(ai)
-local aj=0
-for ak in pairs(ah.Elements)do
-aj=aj+1
-end
-return aj
-end
-
-function ah.PrintRegisteredElements(ai)
-local aj=0
-print"[ WindUI.ConfigManager ] ===== REGISTERED ELEMENTS ====="
-for ak,al in pairs(ah.Elements)do
-aj=aj+1
-print("[ WindUI.ConfigManager ] "..aj..". "..ak.." (Type: "..tostring(al.__type)..")")
-end
-print("[ WindUI.ConfigManager ] Total registered: "..aj.." elements")
-print"[ WindUI.ConfigManager ] =================================="
-end
-
-
-if isfile(ah.Path)then
-local ai,aj=pcall(function()
-return ab:JSONDecode(readfile(ah.Path))
-end)
-
-if ai and aj and aj.__autoload then
-ah.AutoLoad=true
-
-task.spawn(function()
-task.wait(0.5)
-local ak,al=pcall(function()
-return ah:Load()
-end)
-if ak then
-if ac.Debug then print("[ WindUI.ConfigManager ] AutoLoaded config: "..af)end
-else
-warn("[ WindUI.ConfigManager ] Failed to AutoLoad config: "..af.." - "..tostring(al))
-end
-end)
-end
-end
-
-
-ah:SetAsCurrent()
-ad.Configs[af]=ah
-return ah
-end
-
-function ad.Config(ae,af,ag)
-return ad:CreateConfig(af,ag)
-end
-
-function ad.GetAutoLoadConfigs(ae)
-local af={}
-
-for ag,ah in pairs(ad.Configs)do
-if ah.AutoLoad then
-table.insert(af,ag)
-end
-end
-
-return af
-end
-
-function ad.DeleteConfig(ae,af)
-if not delfile then
-return false,"delfile function is not available"
-end
-
-local ag=ad.Path..af..".json"
-
-if not isfile(ag)then
-return false,"Config file does not exist"
-end
-
-local ah,ai=pcall(function()
-delfile(ag)
-end)
-
-if not ah then
-return false,"Failed to delete config file: "..tostring(ai)
-end
-
-ad.Configs[af]=nil
-
-if ac.CurrentConfig and ac.CurrentConfig.Path==ag then
-ac.CurrentConfig=nil
-end
-
-return true,"Config deleted successfully"
-end
-
-function ad.AllConfigs(ae)
+function ab.AllConfigs(ac)
 if not listfiles then return{}end
 
-local af={}
-if not isfolder(ad.Path)then
-makefolder(ad.Path)
-return af
+local ad={}
+if not isfolder(ab.Path)then
+return ad
 end
 
-for ag,ah in next,listfiles(ad.Path)do
-local ai=ah:match"([^\\/]+)%.json$"
-if ai then
-table.insert(af,ai)
+for ae,af in pairs(listfiles(ab.Path))do
+local ag=af:match"([^\\/]+)%.json$"
+if ag then
+table.insert(ad,ag)
 end
 end
 
-return af
+return ad
 end
 
-function ad.GetConfig(ae,af)
-return ad.Configs[af]
-end
-
-return ad end function a.x():typeof(__modImpl())local aa=a.cache.x if not aa then aa={c=__modImpl()}a.cache.x=aa end return aa.c end end do local function __modImpl()
+return ab end function a.x():typeof(__modImpl())local aa=a.cache.x if not aa then aa={c=__modImpl()}a.cache.x=aa end return aa.c end end do local function __modImpl()
 local aa={}
 
 local ab=a.b()
@@ -7780,24 +7459,23 @@ return al end function a.L():typeof(__modImpl())local aa=a.cache.L if not aa the
 
 
 
-
-
-
 local aa={}
 local ae={
 lua={
 "and","break","or","else","elseif","if","then","until","repeat","while","do","for","in","end",
-"local","return","function","export",
+"local","return","function","export","continue","goto",
 },
 rbx={
 "game","workspace","script","math","string","table","task","wait","select","next","Enum",
 "tick","assert","shared","loadstring","tonumber","tostring","type",
 "typeof","unpack","Instance","CFrame","Vector3","Vector2","Color3","UDim","UDim2","Ray","BrickColor",
 "OverlapParams","RaycastParams","Axes","Random","Region3","Rect","TweenInfo",
-"collectgarbage","not","utf8","pcall","xpcall","_G","setmetatable","getmetatable","os","pairs","ipairs"
+"collectgarbage","not","utf8","pcall","xpcall","_G","setmetatable","getmetatable","os","pairs","ipairs",
+"require","spawn","delay","warn","error","print","DateTime","NumberSequence","ColorSequence",
+"PhysicalProperties","NumberRange","PathWaypoint","coroutine","debug","newproxy",
 },
 operators={
-"#","+","-","*","%","/","^","=","~","=","<",">",
+"#","+","-","*","%","/","^","=","~","=","<",">","//","+=","-=","*=","/=","//=","^=","..=","and","or","not",
 }
 }
 
@@ -7813,139 +7491,191 @@ null=Color3.fromHex"#F38BA8",
 call=Color3.fromHex"#89B4FA",
 self_call=Color3.fromHex"#89B4FA",
 local_property=Color3.fromHex"#CBA6F7",
+builtin=Color3.fromHex"#F9E2AF",
 }
 
-local function createKeywordSet(ah)
-local aj={}
-for ak,al in ipairs(ah)do
-aj[al]=true
+local ah={
+"print","warn","error","assert","type","typeof","tonumber","tostring",
+"pairs","ipairs","next","select","pcall","xpcall","getmetatable","setmetatable",
+"rawget","rawset","rawequal","require","wait","spawn","delay","tick",
+}
+
+local function createKeywordSet(aj)
+local ak={}
+for al,am in ipairs(aj)do
+ak[am]=true
 end
-return aj
-end
-
-local ah=createKeywordSet(ae.lua)
-local aj=createKeywordSet(ae.rbx)
-local ak=createKeywordSet(ae.operators)
-
-local function getHighlight(al,am)
-local an=al[am]
-
-if af[an.."_color"]then
-return af[an.."_color"]
+return ak
 end
 
-if tonumber(an)then
+local aj=createKeywordSet(ae.lua)
+local ak=createKeywordSet(ae.rbx)
+local al=createKeywordSet(ae.operators)
+local am=createKeywordSet(ah)
+
+local function getHighlight(an,ao)
+local ap=an[ao]
+
+if af[ap.."_color"]then
+return af[ap.."_color"]
+end
+
+if tonumber(ap)then
 return af.numbers
-elseif an=="nil"then
+elseif ap=="nil"then
 return af.null
-elseif an:sub(1,2)=="--"then
+elseif ap:sub(1,2)=="--"then
 return af.comment
-elseif ak[an]then
+elseif al[ap]then
 return af.operator
-elseif ah[an]then
+elseif aj[ap]then
 return af.lua
-elseif aj[an]then
+elseif ak[ap]then
 return af.rbx
-elseif an:sub(1,1)=="\""or an:sub(1,1)=="\'"then
+elseif ap:sub(1,1)=="\""or ap:sub(1,1)=="\'"or ap:sub(1,2)=="[["then
 return af.str
-elseif an=="true"or an=="false"then
+elseif ap=="true"or ap=="false"then
 return af.boolean
 end
 
-if al[am+1]=="("then
-if al[am-1]==":"then
+if an[ao+1]=="("then
+if an[ao-1]==":"then
 return af.self_call
+end
+
+if am[ap]then
+return af.builtin
 end
 
 return af.call
 end
 
-if al[am-1]=="."then
-if al[am-2]=="Enum"then
+if an[ao-1]=="."then
+if an[ao-2]=="Enum"then
 return af.rbx
 end
 
 return af.local_property
 end
+
+if an[ao-1]==":"and an[ao+1]=="("then
+return af.self_call
+end
 end
 
-function aa.run(al)
-local am={}
-local an=""
+function aa.run(an)
+local ao={}
+local ap=""
 
-local ao=false
-local ap=false
 local aq=false
+local ar=false
+local as=false
+local at=false
 
-for ar=1,#al do
-local as=al:sub(ar,ar)
+for au=1,#an do
+local av=an:sub(au,au)
 
-if ap then
-if as=="\n"and not aq then
-table.insert(am,an)
-table.insert(am,as)
-an=""
+if ar then
+if av=="\n"and not as then
+table.insert(ao,ap)
+table.insert(ao,av)
+ap=""
 
-ap=false
-elseif al:sub(ar-1,ar)=="]]"and aq then
-an=an.."]"
+ar=false
+elseif an:sub(au-1,au)=="]]"and as then
+ap=ap.."]"
 
-table.insert(am,an)
-an=""
+table.insert(ao,ap)
+ap=""
 
-ap=false
+ar=false
+as=false
+else
+ap=ap..av
+end
+elseif at then
+ap=ap..av
+if an:sub(au-1,au)=="]]"then
+table.insert(ao,ap)
+ap=""
+at=false
+end
+elseif aq then
+if av==aq and an:sub(au-1,au-1)~="\\"or av=="\n"then
+ap=ap..av
+table.insert(ao,ap)
+ap=""
 aq=false
 else
-an=an..as
-end
-elseif ao then
-if as==ao and al:sub(ar-1,ar-1)~="\\"or as=="\n"then
-an=an..as
-ao=false
-else
-an=an..as
+ap=ap..av
 end
 else
-if al:sub(ar,ar+1)=="--"then
-table.insert(am,an)
-an="-"
-ap=true
-aq=al:sub(ar+2,ar+3)=="[["
-elseif as=="\""or as=="\'"then
-table.insert(am,an)
-an=as
-ao=as
-elseif ak[as]then
-table.insert(am,an)
-table.insert(am,as)
-an=""
-elseif as:match"[%w_]"then
-an=an..as
+if an:sub(au,au+1)=="--"then
+if ap~=""then
+table.insert(ao,ap)
+end
+ap="-"
+ar=true
+as=an:sub(au+2,au+3)=="[["
+elseif an:sub(au,au+1)=="[["then
+if ap~=""then
+table.insert(ao,ap)
+end
+ap="[["
+at=true
+elseif av=="\""or av=="\'"then
+if ap~=""then
+table.insert(ao,ap)
+end
+ap=av
+aq=av
+elseif an:sub(au,au+1)=="//"or an:sub(au,au+1)=="+="or
+an:sub(au,au+1)=="-="or an:sub(au,au+1)=="*="or
+an:sub(au,au+1)=="/="or an:sub(au,au+1)=="^="or
+an:sub(au,au+2)=="//="or an:sub(au,au+2)=="..="then
+if ap~=""then
+table.insert(ao,ap)
+end
+local aw=(an:sub(au,au+2)=="//="or an:sub(au,au+2)=="..=")and 3 or 2
+table.insert(ao,an:sub(au,au+aw-1))
+ap=""
+elseif al[av]then
+if ap~=""then
+table.insert(ao,ap)
+end
+table.insert(ao,av)
+ap=""
+elseif av:match"[%w_]"then
+ap=ap..av
 else
-table.insert(am,an)
-table.insert(am,as)
-an=""
+if ap~=""then
+table.insert(ao,ap)
+end
+table.insert(ao,av)
+ap=""
 end
 end
 end
 
-table.insert(am,an)
+if ap~=""then
+table.insert(ao,ap)
+end
 
-local ar={}
+local au={}
 
-for as,at in ipairs(am)do
-local au=getHighlight(am,as)
+for av,aw in ipairs(ao)do
+local ax=getHighlight(ao,av)
 
-if au then
-local av=string.format("<font color = \"#%s\">%s</font>",au:ToHex(),at:gsub("<","&lt;"):gsub(">","&gt;"))
+if ax then
+local ay=string.format("<font color=\"#%s\">%s</font>",ax:ToHex(),aw:gsub("<","&lt;"):gsub(">","&gt;"))
 
-table.insert(ar,av)
+table.insert(au,ay)
 else
-table.insert(ar,at)
+table.insert(au,aw:gsub("<","&lt;"):gsub(">","&gt;"))
 end
 end
 
-return table.concat(ar)
+return table.concat(au)
 end
 
 return aa end function a.M():typeof(__modImpl())local aa=a.cache.M if not aa then aa={c=__modImpl()}a.cache.M=aa end return aa.c end end do local function __modImpl()
