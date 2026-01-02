@@ -10,6 +10,7 @@ ConfigManager = {
     Path = nil,
     Configs = {},
     ExcludedTitles = {},
+    RegisteredElements = {}, -- NEW: Track all registered elements globally
     Parser = {
         Colorpicker = {
             Save = function(obj)
@@ -183,6 +184,31 @@ ConfigManager = {
     }
 }
 
+-- NEW: Function to register element globally
+function ConfigManager:RegisterElement(element, title)
+    if not element or not element.__type then return end
+    if not ConfigManager.Parser[element.__type] then return end
+    if ConfigManager.ExcludedTitles[title] then return end
+    
+    local key = title or "Unknown"
+    local counter = 1
+    local finalKey = key
+    
+    while ConfigManager.RegisteredElements[finalKey] do
+        finalKey = key .. "_" .. counter
+        counter = counter + 1
+    end
+    
+    ConfigManager.RegisteredElements[finalKey] = element
+    
+    -- Also add to Window.AllElements if exists
+    if Window and Window.AllElements then
+        table.insert(Window.AllElements, element)
+    end
+    
+    return finalKey
+end
+
 function ConfigManager:Init(WindowTable)
     if not WindowTable.Folder then
         warn("[ WindUI.ConfigManager ] Window.Folder is not specified.")
@@ -237,74 +263,24 @@ function ConfigManager:CreateConfig(configFilename, autoload)
         end
         
         ConfigModule.Elements = {}
-        local count = 0
         
-        -- Fungsi rekursif untuk scan semua elemen
-        local function scanElements(elementTable)
-            if not elementTable then return end
-            
-            for key, element in pairs(elementTable) do
-                -- Skip jika bukan table atau key numeric
-                if type(element) ~= "table" or type(key) == "number" then
-                    continue
-                end
-                
-                -- Cek apakah ini element yang bisa disave
-                if element.__type and ConfigManager.Parser[element.__type] then
-                    -- Pastikan element punya Title dan tidak di-exclude
-                    local title = element.Title or key
-                    
-                    -- Skip Section yang di-exclude dari config
-                    if ConfigManager.ExcludedTitles[title] then
-                        continue
-                    end
-                    
-                    -- Register element dengan key yang unik
-                    local elementKey = title
-                    local counter = 1
-                    while ConfigModule.Elements[elementKey] do
-                        elementKey = title .. "_" .. counter
-                        counter = counter + 1
-                    end
-                    
-                    ConfigModule.Elements[elementKey] = element
-                    count = count + 1
-                    
-                    -- Debug: Print registered element
-                    if Window.Debug then
-                        print(string.format("[ ConfigManager ] Registered: %s (%s)", elementKey, element.__type))
-                    end
-                end
-                
-                -- Rekursif scan child elements
-                if type(element) == "table" then
-                    scanElements(element)
-                end
+        -- Use globally registered elements
+        local count = 0
+        for key, element in pairs(ConfigManager.RegisteredElements) do
+            if element.__type and ConfigManager.Parser[element.__type] then
+                ConfigModule.Elements[key] = element
+                count = count + 1
             end
         end
         
-        -- Scan dari Window.AllElements (jika ada)
-        if Window.AllElements then
-            scanElements(Window.AllElements)
-        end
-        
-        -- Scan dari Window.UIElements (fallback)
-        if Window.UIElements then
-            scanElements(Window.UIElements)
-        end
-        
-        -- Scan dari Window secara langsung
-        scanElements(Window)
-        
-        if Window.Debug then
-            print(string.format("[ ConfigManager ] Total elements registered: %d", count))
-        end
+        print(string.format("[ ConfigManager ] AutoRegister found %d elements", count))
         
         return count
     end
     
     function ConfigModule:Register(Name, Element)
         ConfigModule.Elements[Name] = Element
+        ConfigManager:RegisterElement(Element, Name)
     end
     
     function ConfigModule:Set(key, value)
@@ -322,9 +298,7 @@ function ConfigManager:CreateConfig(configFilename, autoload)
     function ConfigModule:Save()
         if ConfigModule.AutoRegisterEnabled then
             local registered = ConfigModule:AutoRegisterElements()
-            if Window.Debug then
-                print(string.format("[ ConfigManager ] Save: %d elements found", registered))
-            end
+            print(string.format("[ ConfigManager ] Saving %d elements", registered))
         end
         
         local saveData = {
@@ -334,6 +308,7 @@ function ConfigManager:CreateConfig(configFilename, autoload)
             __custom = ConfigModule.CustomData
         }
         
+        local savedCount = 0
         for name, element in pairs(ConfigModule.Elements) do
             if element.__type and ConfigManager.Parser[element.__type] then
                 local success, data = pcall(function()
@@ -342,23 +317,16 @@ function ConfigManager:CreateConfig(configFilename, autoload)
                 
                 if success then
                     saveData.__elements[tostring(name)] = data
-                    if Window.Debug then
-                        print(string.format("[ ConfigManager ] Saved: %s (%s)", name, element.__type))
-                    end
+                    savedCount = savedCount + 1
+                    print(string.format("[ ConfigManager ] Saved: %s (%s) = %s", 
+                        name, element.__type, tostring(data.value)))
                 else
-                    warn(string.format("[ WindUI.ConfigManager ] Failed to save %s: %s", name, tostring(data)))
+                    warn(string.format("[ ConfigManager ] Failed to save %s: %s", name, tostring(data)))
                 end
             end
         end
         
-        if Window.Debug then
-            print(string.format("[ ConfigManager ] Total saved: %d elements", 
-                (function()
-                    local c = 0
-                    for _ in pairs(saveData.__elements) do c = c + 1 end
-                    return c
-                end)()))
-        end
+        print(string.format("[ ConfigManager ] Total saved: %d elements", savedCount))
         
         local success, jsonData = pcall(function()
             return HttpService:JSONEncode(saveData)
@@ -366,7 +334,10 @@ function ConfigManager:CreateConfig(configFilename, autoload)
         
         if success and writefile then
             writefile(ConfigModule.Path, jsonData)
+            print("[ ConfigManager ] Config saved to: " .. ConfigModule.Path)
             return saveData
+        else
+            warn("[ ConfigManager ] Failed to encode or write config")
         end
         
         return false
@@ -400,9 +371,7 @@ function ConfigManager:CreateConfig(configFilename, autoload)
         
         if ConfigModule.AutoRegisterEnabled then
             local registered = ConfigModule:AutoRegisterElements()
-            if Window.Debug then
-                print(string.format("[ ConfigManager ] Load: %d elements found", registered))
-            end
+            print(string.format("[ ConfigManager ] Loading %d elements", registered))
         end
         
         local loadedCount = 0
@@ -411,28 +380,19 @@ function ConfigManager:CreateConfig(configFilename, autoload)
                 local success = pcall(function()
                     ConfigManager.Parser[data.__type].Load(ConfigModule.Elements[name], data)
                     loadedCount = loadedCount + 1
-                    if Window.Debug then
-                        print(string.format("[ ConfigManager ] Loaded: %s (%s)", name, data.__type))
-                    end
+                    print(string.format("[ ConfigManager ] Loaded: %s (%s) = %s", 
+                        name, data.__type, tostring(data.value)))
                 end)
                 
                 if not success then
                     warn(string.format("[ ConfigManager ] Failed to load: %s", name))
                 end
-            elseif Window.Debug then
+            else
                 print(string.format("[ ConfigManager ] Element not found: %s", name))
             end
         end
         
-        if Window.Debug then
-            print(string.format("[ ConfigManager ] Total loaded: %d/%d elements", 
-                loadedCount, 
-                (function()
-                    local c = 0
-                    for _ in pairs(loadData.__elements or {}) do c = c + 1 end
-                    return c
-                end)()))
-        end
+        print(string.format("[ ConfigManager ] Total loaded: %d elements", loadedCount))
         
         ConfigModule.CustomData = loadData.__custom or {}
         
@@ -488,9 +448,7 @@ function ConfigManager:CreateConfig(configFilename, autoload)
                     return ConfigModule:Load()
                 end)
                 if success then
-                    if Window.Debug then 
-                        print("[ WindUI.ConfigManager ] AutoLoaded config: " .. configFilename) 
-                    end
+                    print("[ WindUI.ConfigManager ] AutoLoaded config: " .. configFilename)
                 else
                     warn("[ WindUI.ConfigManager ] Failed to AutoLoad config: " .. configFilename .. " - " .. tostring(result))
                 end
@@ -568,6 +526,18 @@ end
 
 function ConfigManager:GetConfig(configName)
     return ConfigManager.Configs[configName]
+end
+
+-- NEW: Debug function to print all registered elements
+function ConfigManager:DebugPrintElements()
+    print("=== ConfigManager Registered Elements ===")
+    local count = 0
+    for key, element in pairs(ConfigManager.RegisteredElements) do
+        count = count + 1
+        print(string.format("%d. %s (%s)", count, key, element.__type or "unknown"))
+    end
+    print(string.format("Total: %d elements", count))
+    print("========================================")
 end
 
 return ConfigManager
