@@ -11,7 +11,7 @@ return [[
     "description": "Roblox UI Library for scripts",
     "license": "MIT",
     "scripts": {
-        "dev": "bash build/build.sh dev main.lua",
+        "dev": "bash build/build.sh dev main_example.lua",
         "dev:example": "bash build/build.sh dev main_example.lua",
         "build": "bash build/build.sh build",
         "live": "python -m http.server 8642",
