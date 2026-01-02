@@ -156,6 +156,26 @@ local ConfigManager = {
                 end
             end
         },
+          Section = {
+            Save = function(obj)
+                return {
+                    __type = obj.__type,
+                    opened = obj.Opened == true,
+                }
+            end,
+            Load = function(element, data)
+                if element then
+                    task.spawn(function()
+                        task.wait(0.1)
+                        if data.opened and element.Open then
+                            element:Open()
+                        elseif not data.opened and element.Close then
+                            element:Close()
+                        end
+                    end)
+                end
+            end
+        },
     }
 }
 
