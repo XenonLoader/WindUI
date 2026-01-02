@@ -1,3 +1,7 @@
+--[[
+Avantrix WindUI Library
+]]
+
 local a={cache={}::any}do do local function __modImpl()return{
 
 
@@ -4109,6 +4113,12 @@ if not isfolder(ad.Path)then
 makefolder(ad.Path)
 end
 
+
+if not ac.AllElements then
+ac.AllElements={}
+warn"[ WindUI.ConfigManager ] Window.AllElements was not initialized, created empty table"
+end
+
 local ag=ad:AllConfigs()
 
 for ah,ai in next,ag do
@@ -4118,7 +4128,62 @@ ad.Configs[ai]=readfile(aj)
 end
 end
 
+print("[ WindUI.ConfigManager ] Initialized with Window.Folder: "..ac.Folder)
+
 return ad
+end
+
+function ad.DebugElements(ae)
+if not ac then
+warn"[ WindUI.ConfigManager ] Window is not set"
+return
+end
+
+print"[ WindUI.ConfigManager ] ===== DEBUG ELEMENTS ====="
+
+
+if ac.AllElements then
+local af=0
+for ag,ah in pairs(ac.AllElements)do
+af=af+1
+end
+print("[ WindUI.ConfigManager ] Window.AllElements: "..af.." elements")
+for ag,ah in pairs(ac.AllElements)do
+print("  - "..tostring(ah.Title or"No Title").." ("..tostring(ah.__type)..")")
+end
+else
+warn"[ WindUI.ConfigManager ] Window.AllElements is nil"
+end
+
+print""
+
+
+if ac.Tabs then
+local af=0
+for ag in pairs(ac.Tabs)do
+af=af+1
+end
+print("[ WindUI.ConfigManager ] Window.Tabs: "..af.." tabs")
+for ag,ah in pairs(ac.Tabs)do
+local ai=0
+if ah.Elements then
+for aj in pairs(ah.Elements)do
+ai=ai+1
+end
+end
+print("  Tab #"..ag..": "..(ah.Title or"Unnamed").." ("..ai.." elements)")
+if ah.Elements then
+for aj,ak in pairs(ah.Elements)do
+local al=ad.Parser[ak.__type]~=nil
+print("    - "..tostring(ak.Title or"No Title").." ("..tostring(ak.__type)..") [Parser: "..tostring(al).."]")
+end
+end
+end
+else
+warn"[ WindUI.ConfigManager ] Window.Tabs is nil"
+end
+
+print"[ WindUI.ConfigManager ] ==========================="
 end
 
 function ad.CreateConfig(ae,af,ag)
@@ -4147,19 +4212,84 @@ end
 
 ah.Elements={}
 local aj=0
+local ak={}
 
 
 if ac.AllElements then
-for ak,al in ipairs(ac.AllElements)do
-if al and al.__type and ad.Parser[al.__type]then
-if al.Title and not ad.ExcludedTitles[al.Title]then
-local am=al.Title or("Element_"..ak)
-ah.Elements[am]=al
+local al=0
+for am,an in pairs(ac.AllElements)do
+al=al+1
+end
+
+print("[ WindUI.ConfigManager ] Found "..al.." elements in Window.AllElements")
+
+for am,an in pairs(ac.AllElements)do
+if an and an.__type then
+if ad.Parser[an.__type]then
+if an.Title and not ad.ExcludedTitles[an.Title]then
+local ao=an.Title
+if not ak[ao]then
+ah.Elements[ao]=an
+ak[ao]=true
 aj=aj+1
+print("[ WindUI.ConfigManager ] Registered element: "..ao.." (Type: "..an.__type..")")
+end
+else
+if not an.Title then
+print("[ WindUI.ConfigManager ] Skipped element (No Title): Type = "..an.__type)
+elseif ad.ExcludedTitles[an.Title]then
+print("[ WindUI.ConfigManager ] Skipped element (Excluded): "..an.Title)
+end
+end
+else
+print("[ WindUI.ConfigManager ] Skipped element (No Parser): Type = "..tostring(an.__type))
 end
 end
 end
+else
+warn"[ WindUI.ConfigManager ] Window.AllElements is nil"
 end
+
+
+if ac.Tabs then
+print"[ WindUI.ConfigManager ] Scanning elements from all Tabs"
+for al,am in pairs(ac.Tabs)do
+if am.Elements then
+print("[ WindUI.ConfigManager ] Scanning Tab #"..al.." ("..(am.Title or"Unnamed")..") - "..#am.Elements.." elements")
+for an,ao in pairs(am.Elements)do
+if ao and ao.__type then
+if ad.Parser[ao.__type]then
+if ao.Title and not ad.ExcludedTitles[ao.Title]then
+local ap=ao.Title
+if not ak[ap]then
+ah.Elements[ap]=ao
+ak[ap]=true
+aj=aj+1
+print("[ WindUI.ConfigManager ] Registered element from Tab: "..ap.." (Type: "..ao.__type..")")
+else
+print("[ WindUI.ConfigManager ] Skipped duplicate element: "..ap)
+end
+else
+if not ao.Title then
+print("[ WindUI.ConfigManager ] Skipped element from Tab (No Title): Type = "..ao.__type)
+elseif ad.ExcludedTitles[ao.Title]then
+print("[ WindUI.ConfigManager ] Skipped element from Tab (Excluded): "..ao.Title)
+end
+end
+else
+print("[ WindUI.ConfigManager ] Skipped element from Tab (No Parser): Type = "..tostring(ao.__type))
+end
+end
+end
+else
+print("[ WindUI.ConfigManager ] Tab #"..al.." has no Elements table")
+end
+end
+else
+warn"[ WindUI.ConfigManager ] Window.Tabs is nil"
+end
+
+print("[ WindUI.ConfigManager ] AutoRegister completed: "..aj.." elements registered")
 return aj
 end
 
@@ -4181,37 +4311,66 @@ end
 
 function ah.Save(ai)
 if ah.AutoRegisterEnabled then
-ah:AutoRegisterElements()
+local aj=ah:AutoRegisterElements()
+print("[ WindUI.ConfigManager ] Auto-registered "..aj.." elements before save")
 end
 
-local aj={
+print"[ WindUI.ConfigManager ] ===== SAVING CONFIG ====="
+print("[ WindUI.ConfigManager ] Total elements to save: "..(function()local aj=0;for ak in pairs(ah.Elements)do aj=aj+1 end;return aj end)())
+
+
+local aj=ah.Path:match"([^/\\]+)%.json$"
+if not aj then
+aj=ah.Path:match"([^/\\]+)$":gsub("%.json$","")
+end
+
+local ak={
 __version=ah.Version,
 __elements={},
 __autoload=ah.AutoLoad,
+__configname=aj,
 __custom=ah.CustomData
 }
 
-for ak,al in pairs(ah.Elements)do
-if al.__type and ad.Parser[al.__type]then
-local am,an=pcall(function()
-return ad.Parser[al.__type].Save(al)
+local al=0
+local am={}
+for an,ao in pairs(ah.Elements)do
+if ao.__type and ad.Parser[ao.__type]then
+local ap,aq=pcall(function()
+return ad.Parser[ao.__type].Save(ao)
 end)
 
-if am then
-aj.__elements[tostring(ak)]=an
+if ap and aq then
+ak.__elements[tostring(an)]=aq
+al=al+1
+am[ao.__type]=(am[ao.__type]or 0)+1
+print("[ WindUI.ConfigManager ] Saved: "..an.." ("..ao.__type..")")
 else
-warn("[ WindUI.ConfigManager ] Failed to save "..ak)
+warn("[ WindUI.ConfigManager ] Failed to save "..an..": "..tostring(aq))
 end
+else
+warn("[ WindUI.ConfigManager ] Cannot save "..an.." (missing __type or parser)")
 end
 end
 
-local ak,al=pcall(function()
-return ab:JSONEncode(aj)
+print"[ WindUI.ConfigManager ] ===== SAVE SUMMARY ====="
+print("[ WindUI.ConfigManager ] Config Name: "..tostring(aj))
+for an,ao in pairs(am)do
+print("[ WindUI.ConfigManager ] "..an..": "..ao.." elements")
+end
+print("[ WindUI.ConfigManager ] Total saved: "..al.." elements")
+
+local an,ao=pcall(function()
+return ab:JSONEncode(ak)
 end)
 
-if ak and writefile then
-writefile(ah.Path,al)
-return aj
+if an and writefile then
+writefile(ah.Path,ao)
+print("[ WindUI.ConfigManager ] Config saved to: "..ah.Path)
+print"[ WindUI.ConfigManager ] =========================="
+return ak
+else
+warn("[ WindUI.ConfigManager ] Failed to write config file: "..tostring(ao))
 end
 
 return false
@@ -4243,17 +4402,27 @@ __custom={}
 ak=al
 end
 
+print"[ WindUI.ConfigManager ] ===== LOADING CONFIG ====="
+print("[ WindUI.ConfigManager ] Config Name: "..tostring(ak.__configname or"Unknown"))
+print("[ WindUI.ConfigManager ] Version: "..tostring(ak.__version))
+
 if ah.AutoRegisterEnabled then
 ah:AutoRegisterElements()
 end
 
-for al,am in pairs(ak.__elements or{})do
-if ah.Elements[al]and ad.Parser[am.__type]then
+local al=0
+for am,an in pairs(ak.__elements or{})do
+if ah.Elements[am]and ad.Parser[an.__type]then
 pcall(function()
-ad.Parser[am.__type].Load(ah.Elements[al],am)
+ad.Parser[an.__type].Load(ah.Elements[am],an)
+al=al+1
+print("[ WindUI.ConfigManager ] Loaded: "..am.." ("..an.__type..")")
 end)
 end
 end
+
+print("[ WindUI.ConfigManager ] Total loaded: "..al.." elements")
+print"[ WindUI.ConfigManager ] =========================="
 
 ah.CustomData=ak.__custom or{}
 
@@ -4292,6 +4461,29 @@ elements=ah.Elements,
 custom=ah.CustomData,
 autoload=ah.AutoLoad
 }
+end
+
+function ah.DebugWindowElements(ai)
+return ad:DebugElements()
+end
+
+function ah.GetElementCount(ai)
+local aj=0
+for ak in pairs(ah.Elements)do
+aj=aj+1
+end
+return aj
+end
+
+function ah.PrintRegisteredElements(ai)
+local aj=0
+print"[ WindUI.ConfigManager ] ===== REGISTERED ELEMENTS ====="
+for ak,al in pairs(ah.Elements)do
+aj=aj+1
+print("[ WindUI.ConfigManager ] "..aj..". "..ak.." (Type: "..tostring(al.__type)..")")
+end
+print("[ WindUI.ConfigManager ] Total registered: "..aj.." elements")
+print"[ WindUI.ConfigManager ] =================================="
 end
 
 

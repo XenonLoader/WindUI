@@ -188,28 +188,89 @@ function ConfigManager:Init(WindowTable)
         warn("[ WindUI.ConfigManager ] Window.Folder is not specified.")
         return false
     end
-    
+
     Window = WindowTable
     ConfigManager.Folder = Window.Folder
     ConfigManager.Path = "Avantrix/" .. tostring(ConfigManager.Folder) .. "/config/"
-    
+
     if not isfolder("Avantrix/" .. ConfigManager.Folder) then
         makefolder("Avantrix/" .. ConfigManager.Folder)
     end
     if not isfolder(ConfigManager.Path) then
         makefolder(ConfigManager.Path)
     end
-    
+
+    -- Initialize AllElements if it doesn't exist
+    if not Window.AllElements then
+        Window.AllElements = {}
+        warn("[ WindUI.ConfigManager ] Window.AllElements was not initialized, created empty table")
+    end
+
     local files = ConfigManager:AllConfigs()
-    
+
     for _, f in next, files do
         local filePath = ConfigManager.Path .. f .. ".json"
         if isfile and readfile and isfile(filePath) then
             ConfigManager.Configs[f] = readfile(filePath)
         end
     end
-    
+
+    print("[ WindUI.ConfigManager ] Initialized with Window.Folder: " .. Window.Folder)
+
     return ConfigManager
+end
+
+function ConfigManager:DebugElements()
+    if not Window then
+        warn("[ WindUI.ConfigManager ] Window is not set")
+        return
+    end
+
+    print("[ WindUI.ConfigManager ] ===== DEBUG ELEMENTS =====")
+
+    -- Debug Window.AllElements
+    if Window.AllElements then
+        local count = 0
+        for i, element in pairs(Window.AllElements) do
+            count = count + 1
+        end
+        print("[ WindUI.ConfigManager ] Window.AllElements: " .. count .. " elements")
+        for i, element in pairs(Window.AllElements) do
+            print("  - " .. tostring(element.Title or "No Title") .. " (" .. tostring(element.__type) .. ")")
+        end
+    else
+        warn("[ WindUI.ConfigManager ] Window.AllElements is nil")
+    end
+
+    print("")
+
+    -- Debug Window.Tabs
+    if Window.Tabs then
+        local tabCount = 0
+        for _ in pairs(Window.Tabs) do
+            tabCount = tabCount + 1
+        end
+        print("[ WindUI.ConfigManager ] Window.Tabs: " .. tabCount .. " tabs")
+        for tabIndex, tab in pairs(Window.Tabs) do
+            local elemCount = 0
+            if tab.Elements then
+                for _ in pairs(tab.Elements) do
+                    elemCount = elemCount + 1
+                end
+            end
+            print("  Tab #" .. tabIndex .. ": " .. (tab.Title or "Unnamed") .. " (" .. elemCount .. " elements)")
+            if tab.Elements then
+                for _, element in pairs(tab.Elements) do
+                    local hasParser = ConfigManager.Parser[element.__type] ~= nil
+                    print("    - " .. tostring(element.Title or "No Title") .. " (" .. tostring(element.__type) .. ") [Parser: " .. tostring(hasParser) .. "]")
+                end
+            end
+        end
+    else
+        warn("[ WindUI.ConfigManager ] Window.Tabs is nil")
+    end
+
+    print("[ WindUI.ConfigManager ] ===========================")
 end
 
 function ConfigManager:CreateConfig(configFilename, autoload)
@@ -235,22 +296,87 @@ function ConfigManager:CreateConfig(configFilename, autoload)
             warn("[ WindUI.ConfigManager ] Window is not set")
             return 0
         end
-        
+
         ConfigModule.Elements = {}
         local count = 0
-        
-        -- Scan semua elemen dari Window.AllElements
+        local scannedElements = {}
+
+        -- Primary: Scan from Window.AllElements
         if Window.AllElements then
-            for i, element in ipairs(Window.AllElements) do
-                if element and element.__type and ConfigManager.Parser[element.__type] then
-                    if element.Title and not ConfigManager.ExcludedTitles[element.Title] then
-                        local elementName = element.Title or ("Element_" .. i)
-                        ConfigModule.Elements[elementName] = element
-                        count = count + 1
+            local allElementsCount = 0
+            for i, element in pairs(Window.AllElements) do
+                allElementsCount = allElementsCount + 1
+            end
+
+            print("[ WindUI.ConfigManager ] Found " .. allElementsCount .. " elements in Window.AllElements")
+
+            for i, element in pairs(Window.AllElements) do
+                if element and element.__type then
+                    if ConfigManager.Parser[element.__type] then
+                        if element.Title and not ConfigManager.ExcludedTitles[element.Title] then
+                            local elementName = element.Title
+                            if not scannedElements[elementName] then
+                                ConfigModule.Elements[elementName] = element
+                                scannedElements[elementName] = true
+                                count = count + 1
+                                print("[ WindUI.ConfigManager ] Registered element: " .. elementName .. " (Type: " .. element.__type .. ")")
+                            end
+                        else
+                            if not element.Title then
+                                print("[ WindUI.ConfigManager ] Skipped element (No Title): Type = " .. element.__type)
+                            elseif ConfigManager.ExcludedTitles[element.Title] then
+                                print("[ WindUI.ConfigManager ] Skipped element (Excluded): " .. element.Title)
+                            end
+                        end
+                    else
+                        print("[ WindUI.ConfigManager ] Skipped element (No Parser): Type = " .. tostring(element.__type))
                     end
                 end
             end
+        else
+            warn("[ WindUI.ConfigManager ] Window.AllElements is nil")
         end
+
+        -- ALWAYS scan from Tabs to ensure all elements are registered
+        if Window.Tabs then
+            print("[ WindUI.ConfigManager ] Scanning elements from all Tabs")
+            for tabIndex, tab in pairs(Window.Tabs) do
+                if tab.Elements then
+                    print("[ WindUI.ConfigManager ] Scanning Tab #" .. tabIndex .. " (" .. (tab.Title or "Unnamed") .. ") - " .. #tab.Elements .. " elements")
+                    for _, element in pairs(tab.Elements) do
+                        if element and element.__type then
+                            if ConfigManager.Parser[element.__type] then
+                                if element.Title and not ConfigManager.ExcludedTitles[element.Title] then
+                                    local elementName = element.Title
+                                    if not scannedElements[elementName] then
+                                        ConfigModule.Elements[elementName] = element
+                                        scannedElements[elementName] = true
+                                        count = count + 1
+                                        print("[ WindUI.ConfigManager ] Registered element from Tab: " .. elementName .. " (Type: " .. element.__type .. ")")
+                                    else
+                                        print("[ WindUI.ConfigManager ] Skipped duplicate element: " .. elementName)
+                                    end
+                                else
+                                    if not element.Title then
+                                        print("[ WindUI.ConfigManager ] Skipped element from Tab (No Title): Type = " .. element.__type)
+                                    elseif ConfigManager.ExcludedTitles[element.Title] then
+                                        print("[ WindUI.ConfigManager ] Skipped element from Tab (Excluded): " .. element.Title)
+                                    end
+                                end
+                            else
+                                print("[ WindUI.ConfigManager ] Skipped element from Tab (No Parser): Type = " .. tostring(element.__type))
+                            end
+                        end
+                    end
+                else
+                    print("[ WindUI.ConfigManager ] Tab #" .. tabIndex .. " has no Elements table")
+                end
+            end
+        else
+            warn("[ WindUI.ConfigManager ] Window.Tabs is nil")
+        end
+
+        print("[ WindUI.ConfigManager ] AutoRegister completed: " .. count .. " elements registered")
         return count
     end
     
@@ -272,59 +398,88 @@ function ConfigManager:CreateConfig(configFilename, autoload)
     
     function ConfigModule:Save()
         if ConfigModule.AutoRegisterEnabled then
-            ConfigModule:AutoRegisterElements()
+            local registeredCount = ConfigModule:AutoRegisterElements()
+            print("[ WindUI.ConfigManager ] Auto-registered " .. registeredCount .. " elements before save")
         end
-        
+
+        print("[ WindUI.ConfigManager ] ===== SAVING CONFIG =====")
+        print("[ WindUI.ConfigManager ] Total elements to save: " .. (function() local c=0; for _ in pairs(ConfigModule.Elements) do c=c+1 end; return c end)())
+
+        -- Extract config filename from path
+        local configFilename = ConfigModule.Path:match("([^/\\]+)%.json$")
+        if not configFilename then
+            configFilename = ConfigModule.Path:match("([^/\\]+)$"):gsub("%.json$", "")
+        end
+
         local saveData = {
             __version = ConfigModule.Version,
             __elements = {},
             __autoload = ConfigModule.AutoLoad,
+            __configname = configFilename,
             __custom = ConfigModule.CustomData
         }
-        
+
+        local savedCount = 0
+        local typeCount = {}
         for name, element in pairs(ConfigModule.Elements) do
             if element.__type and ConfigManager.Parser[element.__type] then
                 local success, data = pcall(function()
                     return ConfigManager.Parser[element.__type].Save(element)
                 end)
-                
-                if success then
+
+                if success and data then
                     saveData.__elements[tostring(name)] = data
+                    savedCount = savedCount + 1
+                    typeCount[element.__type] = (typeCount[element.__type] or 0) + 1
+                    print("[ WindUI.ConfigManager ] Saved: " .. name .. " (" .. element.__type .. ")")
                 else
-                    warn("[ WindUI.ConfigManager ] Failed to save " .. name)
+                    warn("[ WindUI.ConfigManager ] Failed to save " .. name .. ": " .. tostring(data))
                 end
+            else
+                warn("[ WindUI.ConfigManager ] Cannot save " .. name .. " (missing __type or parser)")
             end
         end
-        
+
+        print("[ WindUI.ConfigManager ] ===== SAVE SUMMARY =====")
+        print("[ WindUI.ConfigManager ] Config Name: " .. tostring(configFilename))
+        for elemType, count in pairs(typeCount) do
+            print("[ WindUI.ConfigManager ] " .. elemType .. ": " .. count .. " elements")
+        end
+        print("[ WindUI.ConfigManager ] Total saved: " .. savedCount .. " elements")
+
         local success, jsonData = pcall(function()
             return HttpService:JSONEncode(saveData)
         end)
-        
+
         if success and writefile then
             writefile(ConfigModule.Path, jsonData)
+            print("[ WindUI.ConfigManager ] Config saved to: " .. ConfigModule.Path)
+            print("[ WindUI.ConfigManager ] ==========================")
             return saveData
+        else
+            warn("[ WindUI.ConfigManager ] Failed to write config file: " .. tostring(jsonData))
         end
-        
+
         return false
     end
     
     function ConfigModule:Load()
-        if isfile and not isfile(ConfigModule.Path) then 
-            return false, "Config file does not exist" 
+        if isfile and not isfile(ConfigModule.Path) then
+            return false, "Config file does not exist"
         end
-        
+
         local success, loadData = pcall(function()
-            local readfile = readfile or function() 
-                warn("[ WindUI.ConfigManager ] The config system doesn't work in the studio.") 
-                return nil 
+            local readfile = readfile or function()
+                warn("[ WindUI.ConfigManager ] The config system doesn't work in the studio.")
+                return nil
             end
             return HttpService:JSONDecode(readfile(ConfigModule.Path))
         end)
-        
+
         if not success then
             return false, "Failed to parse config file"
         end
-        
+
         if not loadData.__version then
             local migratedData = {
                 __version = ConfigModule.Version,
@@ -333,21 +488,31 @@ function ConfigManager:CreateConfig(configFilename, autoload)
             }
             loadData = migratedData
         end
-        
+
+        print("[ WindUI.ConfigManager ] ===== LOADING CONFIG =====")
+        print("[ WindUI.ConfigManager ] Config Name: " .. tostring(loadData.__configname or "Unknown"))
+        print("[ WindUI.ConfigManager ] Version: " .. tostring(loadData.__version))
+
         if ConfigModule.AutoRegisterEnabled then
             ConfigModule:AutoRegisterElements()
         end
-        
+
+        local loadedCount = 0
         for name, data in pairs(loadData.__elements or {}) do
             if ConfigModule.Elements[name] and ConfigManager.Parser[data.__type] then
                 pcall(function()
                     ConfigManager.Parser[data.__type].Load(ConfigModule.Elements[name], data)
+                    loadedCount = loadedCount + 1
+                    print("[ WindUI.ConfigManager ] Loaded: " .. name .. " (" .. data.__type .. ")")
                 end)
             end
         end
-        
+
+        print("[ WindUI.ConfigManager ] Total loaded: " .. loadedCount .. " elements")
+        print("[ WindUI.ConfigManager ] ==========================")
+
         ConfigModule.CustomData = loadData.__custom or {}
-        
+
         return ConfigModule.CustomData
     end
     
@@ -383,6 +548,29 @@ function ConfigManager:CreateConfig(configFilename, autoload)
             custom = ConfigModule.CustomData,
             autoload = ConfigModule.AutoLoad
         }
+    end
+
+    function ConfigModule:DebugWindowElements()
+        return ConfigManager:DebugElements()
+    end
+
+    function ConfigModule:GetElementCount()
+        local count = 0
+        for _ in pairs(ConfigModule.Elements) do
+            count = count + 1
+        end
+        return count
+    end
+
+    function ConfigModule:PrintRegisteredElements()
+        local count = 0
+        print("[ WindUI.ConfigManager ] ===== REGISTERED ELEMENTS =====")
+        for name, element in pairs(ConfigModule.Elements) do
+            count = count + 1
+            print("[ WindUI.ConfigManager ] " .. count .. ". " .. name .. " (Type: " .. tostring(element.__type) .. ")")
+        end
+        print("[ WindUI.ConfigManager ] Total registered: " .. count .. " elements")
+        print("[ WindUI.ConfigManager ] ==================================")
     end
     
     
