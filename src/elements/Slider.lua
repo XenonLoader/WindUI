@@ -17,6 +17,7 @@ function Element:New(Config)
         Title = Config.Title or nil,
         Desc = Config.Desc or nil,
         Locked = Config.Locked or nil,
+        LockedTitle = Config.LockedTitle,
         Value = Config.Value or {},
         Icons = Config.Icons or nil,
         IsTooltip = Config.IsTooltip or false,
@@ -52,10 +53,9 @@ function Element:New(Config)
     
     local function FormatValue(val)
         if IsFloat then
-            return string.format("%.2f", val)
-        else
-            return tonumber(math.floor(val + 0.5))
+            return tonumber(string.format("%.2f", val))
         end
+        return math.floor(val + 0.5)
     end
     
     local function CalculateValue(rawValue)
@@ -139,25 +139,25 @@ function Element:New(Config)
                 },
                 Name = "Thumb",
             }, {
-                Creator.NewRoundFrame(99, "SquircleOutline2", {
+                Creator.NewRoundFrame(99, "Glass-1", {
                     Size = UDim2.new(1,0,1,0),
                     ImageColor3 = Color3.new(1,1,1),
                     Name = "Highlight",
-                    ImageTransparency = .45,
+                    ImageTransparency = .6,
                 }, {
-                    New("UIGradient", {
-                        Rotation = 60,
-                        Color = ColorSequence.new({
-                            ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-                            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-                            ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
-                        }),
-                        Transparency = NumberSequence.new({
-                            NumberSequenceKeypoint.new(0.0, 0.1),
-                            NumberSequenceKeypoint.new(0.5, 1),
-                            NumberSequenceKeypoint.new(1.0, 0.1),
-                        })
-                    }),
+                    -- New("UIGradient", {
+                    --     Rotation = 60,
+                    --     Color = ColorSequence.new({
+                    --         ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                    --         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                    --         ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
+                    --     }),
+                    --     Transparency = NumberSequence.new({
+                    --         NumberSequenceKeypoint.new(0.0, 0.1),
+                    --         NumberSequenceKeypoint.new(0.5, 1),
+                    --         NumberSequenceKeypoint.new(1.0, 0.1),
+                    --     })
+                    -- }),
                 }),
             })
         })
@@ -207,7 +207,7 @@ function Element:New(Config)
     function Slider:Lock()
         Slider.Locked = true
         CanCallback = false
-        return Slider.SliderFrame:Lock()
+        return Slider.SliderFrame:Lock(Slider.LockedTitle)
     end
     function Slider:Unlock()
         Slider.Locked = false
@@ -341,7 +341,7 @@ function Element:New(Config)
                 Tween(Slider.UIElements.SliderIcon.Frame.Thumb, .24, { ImageTransparency = .85, Size = UDim2.new(0,(Config.Window.NewElements and (Slider.ThumbSize*2) or (Slider.ThumbSize))+8,0,Slider.ThumbSize+8) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
             end
             if Tooltip then Tooltip:Open() end
-            print("piskaa")
+            --print("piskaa")
         end
     end)
     

@@ -66,8 +66,8 @@ local Window = WindUI:CreateWindow({
     Title = ".ftgs hub  |  WindUI Example",
     --Author = "by .ftgs • Footagesus",
     Folder = "ftgshub",
-    --Icon = "sfsymbols:macwindow",
-    IconSize = 22*2,
+    Icon = "solar:folder-2-bold-duotone",
+    --IconSize = 22*2,
     NewElements = true,
     --Size = UDim2.fromOffset(700,700),
     
@@ -90,6 +90,7 @@ local Window = WindUI:CreateWindow({
         Height = 44,
         ButtonsType = "Mac", -- Default or Mac
     },
+
     --[[
     KeySystem = {
         Title = "Key System Example  |  WindUI Example",
@@ -115,7 +116,8 @@ do
     Window:Tag({
         Title = "v" .. WindUI.Version,
         Icon = "github",
-        Color = Color3.fromHex("#1c1c1c")
+        Color = Color3.fromHex("#1c1c1c"),
+        Border = true,
     })
 end
 
@@ -297,6 +299,7 @@ do
         Icon = "solar:info-square-bold",
         IconColor = Grey,
         IconShape = "Square",
+        Border = true,
     })
     
     local AboutSection = AboutTab:Section({
@@ -384,6 +387,7 @@ do
         Icon = "solar:home-2-bold",
         IconColor = Grey,
         IconShape = "Square",
+        Border = true,
     })
     
     local OverviewSection1 = OverviewTab:Section({
@@ -413,7 +417,9 @@ do
     
     local OverviewSection1 = OverviewGroup3:Section({
         Title = "Section 1",
+        Desc = "Section exampleee",
         Box = true,
+        BoxBorder = true,
         Opened = true,
     })
     OverviewSection1:Button({ Title = "Button 1", Justify = "Center", Icon = "", Callback = function() print("clicked button 1") end })
@@ -427,6 +433,7 @@ do
     local OverviewSection2 = OverviewGroup3:Section({
         Title = "Section 2",
         Box = true,
+        BoxBorder = true,
         Opened = true,
     })
     OverviewSection2:Button({ Title = "Button 1", Justify = "Center", Icon = "", Callback = function() print("clicked button 1") end })
@@ -445,6 +452,7 @@ do
         Icon = "solar:check-square-bold",
         IconColor = Green,
         IconShape = "Square",
+        Border = true,
     })
     
     
@@ -487,12 +495,14 @@ do
     ToggleTab:Toggle({
         Title = "Toggle",
         Locked = true,
+        LockedTitle = "This element is locked",
     })
     
     ToggleTab:Toggle({
         Title = "Toggle",
         Desc = "Toggle example",
         Locked = true,
+        LockedTitle = "This element is locked",
     })
 end
 
@@ -504,6 +514,7 @@ do
         Icon = "solar:cursor-square-bold",
         IconColor = Blue,
         IconShape = "Square",
+        Border = true,
     })
     
     
@@ -541,8 +552,32 @@ do
     ButtonTab:Space()
     
     ButtonTab:Button({
-        Title = "Button",
-        Desc = "Button example",
+        Title = "Notify Button",
+        --Desc = "Button example",
+        Callback = function()
+            WindUI:Notify({
+                Title = "Hello",
+                Content = "Welcome to the WindUI Example!",
+                Icon = "solar:bell-bold",
+                Duration = 5,
+                CanClose = false,
+            })
+        end
+    })
+    
+    
+    ButtonTab:Button({
+        Title = "Notify Button 2",
+        --Desc = "Button example",
+        Callback = function()
+            WindUI:Notify({
+                Title = "Hello",
+                Content = "Welcome to the WindUI Example!",
+                --Icon = "solar:bell-bold",
+                Duration = 5,
+                CanClose = false,
+            })
+        end
     })
     
     ButtonTab:Space()
@@ -550,6 +585,7 @@ do
     ButtonTab:Button({
         Title = "Button",
         Locked = true,
+        LockedTitle = "This element is locked",
     })
     
     
@@ -557,6 +593,7 @@ do
         Title = "Button",
         Desc = "Button example",
         Locked = true,
+        LockedTitle = "This element is locked",
     })
 end
 
@@ -568,6 +605,7 @@ do
         Icon = "solar:password-minimalistic-input-bold",
         IconColor = Purple,
         IconShape = "Square",
+        Border = true,
     })
     
     
@@ -617,6 +655,7 @@ do
     InputTab:Input({
         Title = "Input",
         Locked = true,
+        LockedTitle = "This element is locked",
     })
     
     
@@ -624,6 +663,7 @@ do
         Title = "Input",
         Desc = "Input example",
         Locked = true,
+        LockedTitle = "This element is locked",
     })
 end
 
@@ -635,6 +675,7 @@ do
         Icon = "solar:square-transfer-horizontal-bold",
         IconColor = Green,
         IconShape = "Square",
+        Border = true,
     })
     
     SliderTab:Section({
@@ -757,6 +798,7 @@ do
         Icon = "solar:hamburger-menu-bold",
         IconColor = Yellow,
         IconShape = "Square",
+        Border = true,
     })
     
     
@@ -803,6 +845,35 @@ do
     
     DropdownTab:Space()
     
+    DropdownTab:Dropdown({
+        Title = "Multi Dropdown",
+        Values = {
+            "Привет", "Hello", "Сәлем", "Bonjour"
+        },
+        Value = nil,
+        AllowNone = true,
+        Multi = true,
+        Callback = function(selectedValue)
+            print("Selected: " .. selectedValue)
+        end
+    })
+    
+    DropdownTab:Space()
+    
+    DropdownTab:Dropdown({
+        Title = "No Multi Dropdown (default",
+        Values = {
+            "Привет", "Hello", "Сәлем", "Bonjour"
+        },
+        Value = 1,
+        --AllowNone = true,
+        Callback = function(selectedValue)
+            print("Selected: " .. selectedValue)
+        end
+    })
+    
+    DropdownTab:Space()
+    
     
 end
 
@@ -835,6 +906,7 @@ do -- config elements
         Icon = "solar:file-text-bold",
         IconColor = Blue,
         IconShape = nil,
+        Border = true,
     })
     
     -- All elements are taken from the official documentation: https://footagesus.github.io/WindUI-Docs/docs
@@ -972,11 +1044,23 @@ do -- config elements
     
     ConfigElementsTab:Toggle({
         Flag = "ToggleTest",
+        Title = "Toggle Panel Background",
+        --Desc = "Toggle Description",
+        --Icon = "house",
+        --Type = "Checkbox",
+        Value = not Window.HidePanelBackground,
+        Callback = function(state) 
+            Window:SetPanelBackground(state)
+        end
+    })
+    
+    ConfigElementsTab:Toggle({
+        Flag = "ToggleTest",
         Title = "Toggle",
         Desc = "Toggle Description",
         --Icon = "house",
         --Type = "Checkbox",
-        Default = false,
+        Value = false,
         Callback = function(state) 
             print("Toggle Activated" .. tostring(state))
         end
@@ -989,6 +1073,7 @@ do -- config panel
         Icon = "solar:folder-with-files-bold",
         IconColor = Purple,
         IconShape = nil,
+        Border = true,
     })
 
     local ConfigManager = Window.ConfigManager
@@ -1012,7 +1097,7 @@ do -- config panel
     --     end
     -- })
 
-    ConfigTab:Space()
+    -- ConfigTab:Space()
 
     local AllConfigs = ConfigManager:AllConfigs()
     local DefaultValue = table.find(AllConfigs, ConfigName) and ConfigName or nil
@@ -1099,6 +1184,7 @@ do
     
     local DiscordTab = OtherSection:Tab({
         Title = "Discord",
+        Border = true,
     })
     
     if Response and Response.guild then
@@ -1129,6 +1215,7 @@ end
 
 
 -- */ Using Nebula Icons /* --
+--[[
 do
     local NebulaIcons = loadstring(game:HttpGetAsync("https://raw.nebulasoftworks.xyz/nebula-icon-library-loader"))()
     
@@ -1146,3 +1233,13 @@ do
         Icon = "nebula:nebula",
     })
 end
+]]
+--[[
+
+local EndButStartTab = Window:Tab({
+    Title = "EndButStartTab",
+    -- u can use `Before` or `After`
+    Before = AboutTab, -- put this tab Before AboutTab
+    
+})
+--]]

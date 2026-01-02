@@ -2,7 +2,7 @@ local Creator = require("../../modules/Creator")
 local New = Creator.New
 local Tween = Creator.Tween
 
-local Winsow
+local Window
 
 local DialogModule = {
     Holder = nil,
@@ -18,8 +18,8 @@ end
 
 function DialogModule.Create(Key, Type)
     local Dialog = {
-        UICorner = 24,
-        UIPadding = 15,
+        UICorner = 28,
+        UIPadding = 12,
         UIElements = {}
     }
     

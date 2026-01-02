@@ -82,25 +82,25 @@ function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
                 Position = UDim2.new(0.5,0,0.5,0),
                 Name = "Bar"
             }, {
-                Creator.NewRoundFrame(Radius, "SquircleOutline2", {
+                Creator.NewRoundFrame(Radius, "Glass-1", {
                     Size = UDim2.new(1,0,1,0),
                     ImageColor3 = Color3.new(1,1,1),
                     Name = "Highlight",
-                    ImageTransparency = .45,
+                    ImageTransparency = 0.4,
                 }, {
-                    New("UIGradient", {
-                        Rotation = 60,
-                        Color = ColorSequence.new({
-                            ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-                            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-                            ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
-                        }),
-                        Transparency = NumberSequence.new({
-                            NumberSequenceKeypoint.new(0.0, 0.1),
-                            NumberSequenceKeypoint.new(0.5, 1),
-                            NumberSequenceKeypoint.new(1.0, 0.1),
-                        })
-                    }),
+                    -- New("UIGradient", {
+                    --     Rotation = 60,
+                    --     Color = ColorSequence.new({
+                    --         ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                    --         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                    --         ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 255, 255)),
+                    --     }),
+                    --     Transparency = NumberSequence.new({
+                    --         NumberSequenceKeypoint.new(0.0, 0.1),
+                    --         NumberSequenceKeypoint.new(0.5, 1),
+                    --         NumberSequenceKeypoint.new(1.0, 0.1),
+                    --     })
+                    -- }),
                 }),
                 IconToggleFrame,
                 New("UIScale", {
@@ -126,6 +126,12 @@ function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
                 Tween(ToggleFrame.Frame, 0.15, {
                     Position = UDim2.new(0, 2, 0.5, 0),
                 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+            end
+        else
+            if Toggled then
+                ToggleFrame.Frame.Position = UDim2.new(0, ToggleWidth - FrameWidth - 2, 0.5, 0)
+            else
+                ToggleFrame.Frame.Position = UDim2.new(0, 2, 0.5, 0)
             end
         end
     

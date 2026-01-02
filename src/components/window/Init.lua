@@ -2,6 +2,7 @@ local cloneref = (cloneref or clonereference or function(instance) return instan
 
 local UserInputService = cloneref(game:GetService("UserInputService"))
 local RunService = cloneref(game:GetService("RunService"))
+local Players = cloneref(game:GetService("Players"))
 
 local CurrentCamera = workspace.CurrentCamera
 
@@ -28,6 +29,7 @@ return function(Config)
         Icon = Config.Icon,
         IconSize = Config.IconSize or 22,
         IconThemed = Config.IconThemed,
+        IconRadius = Config.IconRadius or 0,
         Folder = Config.Folder,
         Resizable = Config.Resizable ~= false,
         Background = Config.Background,
@@ -114,11 +116,11 @@ return function(Config)
     end
     
     if Window.Folder then
-        if not isfolder("Avantrix/" .. Window.Folder) then
-            makefolder("Avantrix/" .. Window.Folder)
+        if not isfolder("WindUI/" .. Window.Folder) then
+            makefolder("WindUI/" .. Window.Folder)
         end
-        if not isfolder("Avantrix/" .. Window.Folder .. "/assets") then
-            makefolder("Avantrix/" .. Window.Folder .. "/assets")
+        if not isfolder("WindUI/" .. Window.Folder .. "/assets") then
+            makefolder("WindUI/" .. Window.Folder .. "/assets")
         end
         if not isfolder(Window.Folder) then
             makefolder(Window.Folder)
@@ -326,8 +328,8 @@ return function(Config)
     local UserIcon
     if Window.User then
         local function GetUserThumb()
-            local ImageId, _ = cloneref(game:GetService("Players")):GetUserThumbnailAsync(
-                Window.User.Anonymous and 1 or game.Players.LocalPlayer.UserId, 
+            local ImageId, _ = Players:GetUserThumbnailAsync(
+                Window.User.Anonymous and 1 or Players.LocalPlayer.UserId, 
                 Enum.ThumbnailType.HeadShot, 
                 Enum.ThumbnailSize.Size420x420
             )
@@ -394,7 +396,7 @@ return function(Config)
                     BackgroundTransparency = 1,
                 }, {
                     New("TextLabel", {
-                        Text = Window.User.Anonymous and "Anonymous" or game.Players.LocalPlayer.DisplayName,
+                        Text = Window.User.Anonymous and "Anonymous" or Players.LocalPlayer.DisplayName,
                         TextSize = 17,
                         ThemeTag = {
                             TextColor3 = "Text",
@@ -408,7 +410,7 @@ return function(Config)
                         Name = "DisplayName"
                     }),
                     New("TextLabel", {
-                        Text = Window.User.Anonymous and "anonymous" or game.Players.LocalPlayer.Name,
+                        Text = Window.User.Anonymous and "anonymous" or Players.LocalPlayer.Name,
                         TextSize = 15,
                         TextTransparency = .6,
                         ThemeTag = {
@@ -454,8 +456,8 @@ return function(Config)
             if v ~= false then v = true end
             Window.User.Anonymous = v
             UserIcon.UserIcon.ImageLabel.Image = GetUserThumb()
-            UserIcon.UserIcon.Frame.DisplayName.Text = v and "Anonymous" or game.Players.LocalPlayer.DisplayName
-            UserIcon.UserIcon.Frame.UserName.Text = v and "anonymous" or game.Players.LocalPlayer.Name
+            UserIcon.UserIcon.Frame.DisplayName.Text = v and "Anonymous" or Players.LocalPlayer.DisplayName
+            UserIcon.UserIcon.Frame.UserName.Text = v and "anonymous" or Players.LocalPlayer.Name
         end
         
         if Window.User.Enabled then
@@ -984,7 +986,7 @@ return function(Config)
             WindowIcon = Creator.Image(
                 Window.Icon,
                 Window.Title,
-                0,
+                Window.IconRadius,
                 Window.Folder,
                 "Window",
                 true,
@@ -1031,6 +1033,15 @@ return function(Config)
         
         WindowAuthor.Text = text
     end
+    
+    function Window:SetSize(size)
+        if typeof(size) == "UDim2" then
+            Window.Size = size
+            
+            Tween(Window.UIElements.Main, 0.08, {Size = size}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+        end
+    end
+    
     
     function Window:SetBackgroundImage(id)
         Window.UIElements.Main.Background.ImageLabel.Image = id
@@ -1427,7 +1438,7 @@ return function(Config)
     local TabModule = TabModuleMain.Init(Window, Config.WindUI, Config.WindUI.TooltipGui)
     TabModule:OnChange(function(t) Window.CurrentTab = t end)
     
-    Window.TabModule = TabModuleMain
+    Window.TabModule = TabModule
     
     function Window:Tab(TabConfig)
         TabConfig.Parent = Window.UIElements.SideBar.Frame
@@ -1445,6 +1456,23 @@ return function(Config)
     function Window:IsResizable(v)
         Window.Resizable = v
         Window.CanResize = v
+    end
+    
+    function Window:SetPanelBackground(v)
+        if typeof(v) == "boolean" then
+            Window.HidePanelBackground = v
+            
+            Window.UIElements.MainBar.Background.Visible = v
+            
+            if TabModule then
+                for _, Container in next, TabModule.Containers do
+                    Container.ScrollingFrame.UIPadding.PaddingTop = UDim.new(0,Window.HidePanelBackground and 20 or 10)
+                    Container.ScrollingFrame.UIPadding.PaddingLeft = UDim.new(0,Window.HidePanelBackground and 20 or 10)
+                    Container.ScrollingFrame.UIPadding.PaddingRight = UDim.new(0,Window.HidePanelBackground and 20 or 10)
+                    Container.ScrollingFrame.UIPadding.PaddingBottom = UDim.new(0,Window.HidePanelBackground and 20 or 10)
+                end
+            end
+        end
     end
     
     function Window:Divider()
@@ -1477,7 +1505,7 @@ return function(Config)
             Content = DialogConfig.Content,
             Buttons = DialogConfig.Buttons or {},
             
-            TextPadding = 10,
+            TextPadding = 14,
         }
         local Dialog = DialogModule.Create(false)
         
@@ -1597,7 +1625,7 @@ return function(Config)
         local Buttons = {}
 
         for _,Button in next, DialogTable.Buttons do
-            local ButtonFrame = CreateButton(Button.Title, Button.Icon, Button.Callback, Button.Variant, ButtonsContent, Dialog, false)
+            local ButtonFrame = CreateButton(Button.Title, Button.Icon, Button.Callback, Button.Variant, ButtonsContent, Dialog, true)
             table.insert(Buttons, ButtonFrame)
         end
         
@@ -1658,31 +1686,38 @@ return function(Config)
         return Dialog
     end
     
-    
+    local ClickedClose = false
+
     Window:CreateTopbarButton("Close", "x", function()
-        if not Window.IgnoreAlerts then
-            Window:SetToTheCenter()
-            Window:Dialog({
-                --Icon = "trash-2",
-                Title = "Close Window",
-                Content = "Do you want to close this window? You will not be able to open it again.",
-                Buttons = {
-                    {
-                        Title = "Cancel",
-                        --Icon = "chevron-left",
-                        Callback = function() end,
-                        Variant = "Secondary",
-                    },
-                    {
-                        Title = "Close Window",
-                        --Icon = "chevron-down",
-                        Callback = function() Window:Destroy() end,
-                        Variant = "Primary",
+        if not ClickedClose then
+            if not Window.IgnoreAlerts then
+                ClickedClose = true
+                Window:SetToTheCenter()
+                Window:Dialog({
+                    --Icon = "trash-2",
+                    Title = "Close Window",
+                    Content = "Do you want to close this window? You will not be able to open it again.",
+                    Buttons = {
+                        {
+                            Title = "Cancel",
+                            --Icon = "chevron-left",
+                            Callback = function() ClickedClose = false end,
+                            Variant = "Secondary",
+                        },
+                        {
+                            Title = "Close Window",
+                            --Icon = "chevron-down",
+                            Callback = function() 
+                                ClickedClose = false
+                                Window:Destroy() 
+                            end,
+                            Variant = "Primary",
+                        }
                     }
-                }
-            })
-        else
-            Window:Destroy()
+                })
+            else    
+                Window:Destroy()
+            end
         end
     end, (Window.Topbar.ButtonsType == "Default" and 999 or 997), nil, Color3.fromHex("#F4695F"))
     
@@ -1854,6 +1889,33 @@ return function(Config)
             end
         end
     end
-
+    
+    
+    -- local Bindings = {
+    --     Title = function(v)
+    --         Window:SetTitle(v)
+    --     end,
+    --     Author = function(v)
+    --         Window:SetAuthor(v)
+    --     end,
+    --     Size = function(v)
+    --         Window:SetSize(v)
+    --     end,
+    --     HidePanelBackground  = function(v)
+    --         Window:SetPanelBackground(v)
+    --     end
+    -- }
+    
+    -- setmetatable(Window, {
+    --     __newindex = function(t, key, value)
+    --         rawset(t, key, value)
+    
+    --         local bind = bindings[key]
+    --         if bind then
+    --             bind(value)
+    --         end
+    --     end
+    -- })
+    
     return Window
 end

@@ -19,6 +19,7 @@ function Element:New(Config)
         Title = Config.Title or "Keybind",
         Desc = Config.Desc or nil,
         Locked = Config.Locked or false,
+        LockedTitle = Config.LockedTitle,
         Value = Config.Value or "F",
         Callback = Config.Callback or function() end,
         CanChange = Config.CanChange or true,
@@ -41,7 +42,7 @@ function Element:New(Config)
         ParentConfig = Config,
     })
     
-    Keybind.UIElements.Keybind = CreateLabel(Keybind.Value, nil, Keybind.KeybindFrame.UIElements.Main)
+    Keybind.UIElements.Keybind = CreateLabel(Keybind.Value, nil, Keybind.KeybindFrame.UIElements.Main, nil, Config.Window.NewElements and 12 or 10)
     
     Keybind.UIElements.Keybind.Size = UDim2.new(
             0,
@@ -69,7 +70,7 @@ function Element:New(Config)
     function Keybind:Lock()
         Keybind.Locked = true
         CanCallback = false
-        return Keybind.KeybindFrame:Lock()
+        return Keybind.KeybindFrame:Lock(Keybind.LockedTitle)
     end
     function Keybind:Unlock()
         Keybind.Locked = false

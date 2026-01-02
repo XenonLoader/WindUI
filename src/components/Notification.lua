@@ -5,7 +5,7 @@ local Tween = Creator.Tween
 local NotificationModule = {
     Size = UDim2.new(0,300,1,-100-56),
     SizeLower = UDim2.new(0,300,1,-56),
-    UICorner = 13,
+    UICorner = 18,
     UIPadding = 14,
     --ButtonPadding = 9,
     Holder = nil,
@@ -57,13 +57,13 @@ function NotificationModule.New(Config)
         BackgroundImageTransparency = Config.BackgroundImageTransparency,
         Duration = Config.Duration or 5,
         Buttons = Config.Buttons or {},
-        CanClose = true,
+        CanClose = Config.CanClose ~= false,
         UIElements = {},
         Closed = false,
     }
-    if Notification.CanClose == nil then
+    --[[if Notification.CanClose == nil then
         Notification.CanClose = true
-    end
+    end--]]
     NotificationModule.NotificationIndex = NotificationModule.NotificationIndex + 1
     NotificationModule.Notifications[NotificationModule.NotificationIndex] = Notification
     
@@ -137,11 +137,11 @@ function NotificationModule.New(Config)
         })
     end
     
-    local Duration = New("Frame", {
+    local Duration = Creator.NewRoundFrame(NotificationModule.UICorner, "Squircle", {
         Size = UDim2.new(0,0,1,0),
-        BackgroundTransparency = .95,
         ThemeTag = {
-            BackgroundColor3 = "Text",
+            ImageTransparency = "NotificationDurationTransparency",
+            ImageColor3 = "NotificationDuration",
         },
         --Visible = false,
     })
@@ -168,12 +168,13 @@ function NotificationModule.New(Config)
             TextXAlignment = "Left",
             RichText = true,
             BackgroundTransparency = 1,
-            TextSize = 16,
+            TextSize = 18,
             ThemeTag = {
-                TextColor3 = "Text"
+                TextColor3 = "NotificationTitle",
+                TextTransparency = "NotificationTitleTransparency",
             },
             Text = Notification.Title,
-            FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium)
+            FontFace = Font.new(Creator.Font, Enum.FontWeight.SemiBold)
         }),
         New("UIListLayout", {
             Padding = UDim.new(0,NotificationModule.UIPadding/3)
@@ -188,10 +189,11 @@ function NotificationModule.New(Config)
             TextXAlignment = "Left",
             RichText = true,
             BackgroundTransparency = 1,
-            TextTransparency = .4,
+            --TextTransparency = .4,
             TextSize = 15,
             ThemeTag = {
-                TextColor3 = "Text"
+                TextColor3 = "NotificationContent",
+                TextTransparency = "NotificationContentTransparency",
             },
             Text = Notification.Content,
             FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
@@ -207,18 +209,33 @@ function NotificationModule.New(Config)
         AutomaticSize = "Y",
         ImageTransparency = .05,
         ThemeTag = {
-            ImageColor3 = "Background"
+            ImageColor3 = "Notification"
         },
         --ZIndex = 20
     }, {
-        New("CanvasGroup", {
+        Creator.NewRoundFrame(NotificationModule.UICorner, "Glass-1", {
+            Size = UDim2.new(1,0,1,0),
+            ThemeTag = {
+                ImageColor3 = "NotificationBorder",
+                ImageTransparency = "NotificationBorderTransparency",
+            },
+        }),
+        New("Frame", {
             Size = UDim2.new(1,0,1,0),
             BackgroundTransparency = 1,
+            Name = "DurationFrame",
         }, {
-            Duration,
-            New("UICorner", {
-                CornerRadius = UDim.new(0,NotificationModule.UICorner),
-            })
+            New("Frame", {
+                Size = UDim2.new(1,0,1,0), -- 0,0,1,0
+                BackgroundTransparency = 1,
+                ClipsDescendants = true,
+            }, {
+                Duration,
+            }),
+        
+            -- New("UICorner", {
+            --     CornerRadius = UDim.new(0,NotificationModule.UICorner),
+            -- })
     
         }),
         New("ImageLabel", {
@@ -267,7 +284,8 @@ function NotificationModule.New(Config)
         )}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
         Tween(Main, 0.45, {Position = UDim2.new(0,0,1,0)}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
         if Notification.Duration then
-            Tween(Duration, Notification.Duration, {Size = UDim2.new(1,0,1,0)}, Enum.EasingStyle.Linear,Enum.EasingDirection.InOut):Play()
+            Duration.Size = UDim2.new(0,Main.DurationFrame.AbsoluteSize.X,1,0)
+            Tween(Main.DurationFrame.Frame, Notification.Duration, {Size = UDim2.new(0,0,1,0)}, Enum.EasingStyle.Linear,Enum.EasingDirection.InOut):Play()
             task.wait(Notification.Duration)
             Notification:Close()
         end

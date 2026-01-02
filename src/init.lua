@@ -252,8 +252,8 @@ WindUI:SetLanguage(Creator.Language)
 function WindUI:CreateWindow(Config)
     local CreateWindow = require("./components/window/Init")
     
-    if not isfolder("Avantrix") then
-        makefolder("Avantrix")
+    if not isfolder("WindUI") then
+        makefolder("WindUI")
     end
     if Config.Folder then
         makefolder(Config.Folder)

@@ -12,6 +12,7 @@ function Tag:New(TagConfig, Parent)
         Icon = TagConfig.Icon,
         Color = TagConfig.Color or Color3.fromHex("#315dff"),
         Radius = TagConfig.Radius or 999,
+        Border = TagConfig.Border or false,
         
         TagFrame = nil,
         Height = 26,
@@ -68,23 +69,39 @@ function Tag:New(TagConfig, Parent)
         ImageColor3 = typeof(TagModule.Color) == "Color3" and TagModule.Color or Color3.new(1,1,1),
     }, {
         BackgroundGradient,
-        New("UIPadding", {
-            PaddingLeft = UDim.new(0,TagModule.Padding),
-            PaddingRight = UDim.new(0,TagModule.Padding),
+        Creator.NewRoundFrame(TagModule.Radius, "Glass-1", {
+            Size = UDim2.new(1,0,1,0),
+            ThemeTag = {
+                ImageColor3 = "White",
+            },
+            ImageTransparency = .75
         }),
-        TagIcon,
-        TagTitle,
-        New("UIListLayout", {
-            FillDirection = "Horizontal",
-            VerticalAlignment = "Center",
-            Padding = UDim.new(0,TagModule.Padding/1.5)
-        })
+        New("Frame", {
+            Size = UDim2.new(0,0,1,0),
+            AutomaticSize = "X",
+            Name = "Content",
+            BackgroundTransparency = 1,
+        }, {
+            TagIcon,
+            TagTitle,
+            New("UIPadding", {
+                PaddingLeft = UDim.new(0,TagModule.Padding),
+                PaddingRight = UDim.new(0,TagModule.Padding),
+            }),
+            New("UIListLayout", {
+                FillDirection = "Horizontal",
+                VerticalAlignment = "Center",
+                Padding = UDim.new(0,TagModule.Padding/1.5)
+            })
+        }),
     })
     
     
     function TagModule:SetTitle(text)
         TagModule.Title = text
         TagTitle.Text = text
+        
+        return TagModule
     end
     
     function TagModule:SetColor(color)
@@ -105,8 +122,44 @@ function Tag:New(TagConfig, Parent)
             end
             Tween(TagFrame, .06, { ImageColor3 = color }):Play()
         end
+        
+        return TagModule
     end
     
+    function TagModule:SetIcon(icon)
+        TagModule.Icon = icon
+        
+        if icon then
+            TagIcon = Creator.Image(
+                icon,
+                icon,
+                0,
+                TagConfig.Window,
+                "Tag",
+                false
+            )
+            
+            TagIcon.Size = UDim2.new(0,TagModule.IconSize,0,TagModule.IconSize)
+            TagIcon.Parent = TagFrame
+            
+            if typeof(TagModule.Color) == "Color3" then
+                TagIcon.ImageLabel.ImageColor3 = Creator.GetTextColorForHSB(TagModule.Color)
+            elseif typeof(TagModule.Color) == "table" then
+                TagIcon.ImageLabel.ImageColor3 = Creator.GetTextColorForHSB(Creator.GetAverageColor(BackgroundGradient))
+            end
+        else
+            if TagIcon then
+                TagIcon:Destroy()
+                TagIcon = nil
+            end
+        end
+        return TagModule
+    end
+    
+    function TagModule:Destroy()
+        TagFrame:Destroy()
+        return TagModule
+    end
     
     return TagModule
 end

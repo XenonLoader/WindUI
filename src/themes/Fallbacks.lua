@@ -22,6 +22,8 @@ return {
     WindowTopbarIcon = "Icon",
     WindowTopbarButtonIcon = "Icon",
     
+    WindowSearchBarBackground = "Background",
+    
     TabBackground = "Hover",
     TabTitle = "Text",
     TabIcon = "Icon",
@@ -48,6 +50,8 @@ return {
     
     Checkbox = "Primary",
     CheckboxIcon = "White",
+    CheckboxBorder = "White",
+    CheckboxBorderTransparency = .75,
     
     Slider = "Primary",
     SliderThumb = "White",
@@ -58,4 +62,30 @@ return {
     TooltipText = "White",
     TooltipSecondary = "Primary",
     TooltipSecondaryText = "White",
+    
+    SectionExpandIcon = "White",
+    SectionExpandIconTransparency = .4,
+    SectionBox = "White",
+    SectionBoxTransparency = .95,
+    SectionBoxBorder = "White",
+    SectionBoxBorderTransparency = .75,
+    SectionBoxBackground = "White",
+    SectionBoxBackgroundTransparency = .95,
+    
+    SearchBarBorder = "White",
+    SearchBarBorderTransparency = .75,
+    
+    Notification = "Background",
+    NotificationTitle = "Text",
+    NotificationTitleTransparency = 0,
+    NotificationContent = "Text",
+    NotificationContentTransparency = .4,
+    NotificationDuration = "White",
+    NotificationDurationTransparency = .95,
+    NotificationBorder = "White",
+    NotificationBorderTransparency = .75,
+    
+    DropdownTabBorder = "White",
+
+    TabBorder = "White",
 }

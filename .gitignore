@@ -26,4 +26,3 @@ build/.init.lua
 *.njsproj
 *.sln
 *.sw?
-*.exe
