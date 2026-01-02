@@ -175,8 +175,6 @@ function ConfigManager:Init(WindowTable)
     if not isfolder(ConfigManager.Path) then
         makefolder(ConfigManager.Path)
     end
-    
-    print("[ ConfigManager ] Initialized successfully")
     return ConfigManager
 end
 
@@ -214,8 +212,6 @@ function ConfigManager:CreateConfig(configFilename)
                 end
             end
         end
-        
-        print("[ ConfigManager ] Auto-registered " .. count .. " elements")
         return count
     end
     
@@ -262,7 +258,6 @@ function ConfigManager:CreateConfig(configFilename)
         
         if success and writefile then
             writefile(ConfigModule.Path, jsonData)
-            print("[ ConfigManager ] Config saved: " .. configFilename)
             return true
         end
         
@@ -295,7 +290,6 @@ function ConfigManager:CreateConfig(configFilename)
         end
         
         ConfigModule.CustomData = loadData.__custom or {}
-        print("[ ConfigManager ] Config loaded: " .. configFilename)
         return ConfigModule.CustomData
     end
     
