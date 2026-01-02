@@ -154,7 +154,27 @@ ConfigManager = {
                     task.spawn(function()
                         task.wait(0.05)
                         if element.Callback then
-                            element.Callback(value)
+                            element.Callback(data.value)
+                        end
+                    end)
+                end
+            end
+        },
+        Section = {
+            Save = function(obj)
+                return {
+                    __type = obj.__type,
+                    opened = obj.Opened == true,
+                }
+            end,
+            Load = function(element, data)
+                if element then
+                    task.spawn(function()
+                        task.wait(0.1)
+                        if data.opened and element.Open then
+                            element:Open()
+                        elseif not data.opened and element.Close then
+                            element:Close()
                         end
                     end)
                 end
@@ -164,32 +184,31 @@ ConfigManager = {
 }
 
 function ConfigManager:Init(WindowTable)
-    if not WindowTable.Folder and not WindowTable.Settings then
-        warn("[ ConfigManager ] Window.Folder is not specified.")
+    if not WindowTable.Folder then
+        warn("[ WindUI.ConfigManager ] Window.Folder is not specified.")
         return false
     end
-
-    ConfigManager.Folder = WindowTable.Folder or (WindowTable.Settings and WindowTable.Settings.Folder)
+    
+    Window = WindowTable
+    ConfigManager.Folder = Window.Folder
     ConfigManager.Path = "Avantrix/" .. tostring(ConfigManager.Folder) .. "/config/"
-    ConfigManager.Window = WindowTable
-
+    
     if not isfolder("Avantrix/" .. ConfigManager.Folder) then
         makefolder("Avantrix/" .. ConfigManager.Folder)
-        if not isfolder("Avantrix/" .. ConfigManager.Folder .. "/config/") then
-            makefolder("Avantrix/" .. ConfigManager.Folder .. "/config/")
-        end
     end
-
+    if not isfolder(ConfigManager.Path) then
+        makefolder(ConfigManager.Path)
+    end
+    
     local files = ConfigManager:AllConfigs()
-
+    
     for _, f in next, files do
         local filePath = ConfigManager.Path .. f .. ".json"
         if isfile and readfile and isfile(filePath) then
             ConfigManager.Configs[f] = readfile(filePath)
         end
     end
-
-    print("[ ConfigManager ] Initialized successfully")
+    
     return ConfigManager
 end
 
@@ -206,7 +225,11 @@ function ConfigManager:CreateConfig(configFilename, autoload)
     if not configFilename then
         return false, "No config file is selected"
     end
-
+    
+    function ConfigModule:SetAsCurrent()
+        Window:SetCurrentConfig(ConfigModule)
+    end
+    
     function ConfigModule:AutoRegisterElements()
         if not Window then
             warn("[ WindUI.ConfigManager ] Window is not set")
@@ -214,143 +237,20 @@ function ConfigManager:CreateConfig(configFilename, autoload)
         end
         
         ConfigModule.Elements = {}
-        local allElements = {}
-        local seen = {}
-
-        print("[ ConfigManager ] Starting auto-register scan...")
-
-        -- Method 1: Check Window.AllElements (Maclib style)
-        if ConfigManager.Window.AllElements and type(ConfigManager.Window.AllElements) == "table" then
-            for _, element in pairs(ConfigManager.Window.AllElements) do
-                if type(element) == "table" and not seen[element] then
-                    seen[element] = true
-                    table.insert(allElements, element)
-                end
-            end
-            print("[ ConfigManager ] Found " .. #allElements .. " from Window.AllElements")
-        end
-
-        -- Method 2: Check Window.Elements (Alternative structure)
-        if ConfigManager.Window.Elements and type(ConfigManager.Window.Elements) == "table" then
-            for _, element in pairs(ConfigManager.Window.Elements) do
-                if type(element) == "table" and not seen[element] then
-                    seen[element] = true
-                    table.insert(allElements, element)
-                end
-            end
-            print("[ ConfigManager ] Found " .. #allElements .. " total after Window.Elements")
-        end
-
-        -- Method 3: Scan through Tabs (WindUI and Maclib)
-        local tabs = ConfigManager.Window.Tabs or ConfigManager.Window.tabs
-        if tabs and type(tabs) == "table" then
-            print("[ ConfigManager ] Scanning tabs...")
-            for tabName, tab in pairs(tabs) do
-                if type(tab) == "table" then
-                    -- Check tab.Elements
-                    if tab.Elements and type(tab.Elements) == "table" then
-                        for _, element in pairs(tab.Elements) do
-                            if type(element) == "table" and not seen[element] then
-                                seen[element] = true
-                                table.insert(allElements, element)
-                            end
-                        end
-                    end
-
-                    -- Check tab.AllElements
-                    if tab.AllElements and type(tab.AllElements) == "table" then
-                        for _, element in pairs(tab.AllElements) do
-                            if type(element) == "table" and not seen[element] then
-                                seen[element] = true
-                                table.insert(allElements, element)
-                            end
-                        end
-                    end
-
-                    -- Check tab.Sections (WindUI style)
-                    if tab.Sections and type(tab.Sections) == "table" then
-                        for _, section in pairs(tab.Sections) do
-                            if type(section) == "table" and section.Elements then
-                                for _, element in pairs(section.Elements) do
-                                    if type(element) == "table" and not seen[element] then
-                                        seen[element] = true
-                                        table.insert(allElements, element)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            print("[ ConfigManager ] Found " .. #allElements .. " total after scanning tabs")
-        end
-
-        -- Method 4: Deep recursive scan (last resort)
-        if #allElements == 0 then
-            print("[ ConfigManager ] Performing deep scan...")
-            local function scanForElements(obj, depth, visited)
-                if depth > 5 or type(obj) ~= "table" or visited[obj] then return end
-                visited[obj] = true
-
-                if obj.__type and type(obj.__type) == "string" and not seen[obj] then
-                    seen[obj] = true
-                    table.insert(allElements, obj)
-                end
-
-                for k, v in pairs(obj) do
-                    if type(v) == "table" and k ~= "Parent" and k ~= "Window" and k ~= "_G" then
-                        scanForElements(v, depth + 1, visited)
-                    end
-                end
-            end
-
-            scanForElements(ConfigManager.Window, 0, {})
-            print("[ ConfigManager ] Deep scan found " .. #allElements .. " elements")
-        end
-
-        -- Process and filter elements
         local count = 0
-        local savedTypes = {
-            Toggle = true,
-            Slider = true,
-            Dropdown = true,
-            Input = true,
-            Keybind = true,
-            Colorpicker = true
-        }
-
-        for i, element in ipairs(allElements) do
-            if element and element.__type then
-                local elementType = tostring(element.__type)
-
-                -- Skip elements that don't need to be saved
-                if not savedTypes[elementType] then
-                    continue
+        
+        -- Scan semua elemen dari Window.AllElements
+        if Window.AllElements then
+            for i, element in ipairs(Window.AllElements) do
+                if element and element.__type and ConfigManager.Parser[element.__type] then
+                    if element.Title and not ConfigManager.ExcludedTitles[element.Title] then
+                        local elementName = element.Title or ("Element_" .. i)
+                        ConfigModule.Elements[elementName] = element
+                        count = count + 1
+                    end
                 end
-
-                -- Skip if title is excluded
-                if element.Title and ConfigManager.ExcludedTitles[element.Title] then
-                    continue
-                end
-
-                -- Get element name (prioritize Title, then Flag, then index)
-                local elementName = element.Title or element.Flag or ("Element_" .. i)
-                elementName = tostring(elementName):gsub("[^%w_%-% ]", "_")
-
-                -- Avoid duplicate names
-                local baseName = elementName
-                local suffix = 1
-                while ConfigModule.Elements[elementName] do
-                    elementName = baseName .. "_" .. suffix
-                    suffix = suffix + 1
-                end
-
-                ConfigModule.Elements[elementName] = element
-                count = count + 1
             end
         end
-
-        print("[ ConfigManager ] Successfully registered " .. count .. " elements")
         return count
     end
     
@@ -365,14 +265,14 @@ function ConfigManager:CreateConfig(configFilename, autoload)
     function ConfigModule:Get(key)
         return ConfigModule.CustomData[key]
     end
-
+    
+    function ConfigModule:SetAutoLoad(Value)
+        ConfigModule.AutoLoad = Value
+    end
+    
     function ConfigModule:Save()
         if ConfigModule.AutoRegisterEnabled then
-            local count = ConfigModule:AutoRegisterElements()
-            if count == 0 then
-                warn("[ ConfigManager ] No elements found to save!")
-                return false
-            end
+            ConfigModule:AutoRegisterElements()
         end
         
         local saveData = {
@@ -391,7 +291,7 @@ function ConfigManager:CreateConfig(configFilename, autoload)
                 if success then
                     saveData.__elements[tostring(name)] = data
                 else
-                    warn("[ ConfigManager ] Failed to save " .. name .. ": " .. tostring(data))
+                    warn("[ WindUI.ConfigManager ] Failed to save " .. name)
                 end
             end
         end
@@ -399,46 +299,32 @@ function ConfigManager:CreateConfig(configFilename, autoload)
         local success, jsonData = pcall(function()
             return HttpService:JSONEncode(saveData)
         end)
-
-        if not success then
-            warn("[ ConfigManager ] Failed to encode JSON: " .. tostring(jsonData))
-            return false
+        
+        if success and writefile then
+            writefile(ConfigModule.Path, jsonData)
+            return saveData
         end
-
-        if writefile then
-            local writeSuccess, writeError = pcall(function()
-                writefile(ConfigModule.Path, jsonData)
-            end)
-
-            if writeSuccess then
-                print("[ ConfigManager ] Config saved successfully!")
-                return true
-            else
-                warn("[ ConfigManager ] Failed to write file: " .. tostring(writeError))
-                return false
-            end
-        else
-            warn("[ ConfigManager ] writefile is not available")
-            return false
-        end
+        
+        return false
     end
     
     function ConfigModule:Load()
-        if isfile and not isfile(ConfigModule.Path) then
-            return false, "Config file does not exist"
+        if isfile and not isfile(ConfigModule.Path) then 
+            return false, "Config file does not exist" 
         end
         
         local success, loadData = pcall(function()
-            local readfile = readfile or function() warn("[ ConfigManager ] readfile not available") return nil end
-            local content = readfile(ConfigModule.Path)
-            return HttpService:JSONDecode(content)
+            local readfile = readfile or function() 
+                warn("[ WindUI.ConfigManager ] The config system doesn't work in the studio.") 
+                return nil 
+            end
+            return HttpService:JSONDecode(readfile(ConfigModule.Path))
         end)
         
         if not success then
-            warn("[ ConfigManager ] Failed to parse config file: " .. tostring(loadData))
             return false, "Failed to parse config file"
         end
-
+        
         if not loadData.__version then
             local migratedData = {
                 __version = ConfigModule.Version,
@@ -451,28 +337,79 @@ function ConfigManager:CreateConfig(configFilename, autoload)
         if ConfigModule.AutoRegisterEnabled then
             ConfigModule:AutoRegisterElements()
         end
-
-        local loadedCount = 0
-        for name, data in next, (loadData.__elements or {}) do
-            if ConfigModule.Elements[name] and data.__type and ConfigManager.Parser[data.__type] then
-                local success, err = pcall(function()
+        
+        for name, data in pairs(loadData.__elements or {}) do
+            if ConfigModule.Elements[name] and ConfigManager.Parser[data.__type] then
+                pcall(function()
                     ConfigManager.Parser[data.__type].Load(ConfigModule.Elements[name], data)
                 end)
             end
         end
         
         ConfigModule.CustomData = loadData.__custom or {}
-
+        
         return ConfigModule.CustomData
     end
-
+    
+    function ConfigModule:Delete()
+        if not delfile then
+            return false, "delfile function is not available"
+        end
+        
+        if not isfile(ConfigModule.Path) then
+            return false, "Config file does not exist"
+        end
+        
+        local success, err = pcall(function()
+            delfile(ConfigModule.Path)
+        end)
+        
+        if not success then
+            return false, "Failed to delete config file: " .. tostring(err)
+        end
+        
+        ConfigManager.Configs[configFilename] = nil
+        
+        if Window.CurrentConfig == ConfigModule then
+            Window.CurrentConfig = nil
+        end
+        
+        return true, "Config deleted successfully"
+    end
+    
     function ConfigModule:GetData()
         return {
             elements = ConfigModule.Elements,
-            custom = ConfigModule.CustomData
+            custom = ConfigModule.CustomData,
+            autoload = ConfigModule.AutoLoad
         }
     end
-
+    
+    
+    if isfile(ConfigModule.Path) then
+        local success, configData = pcall(function()
+            return HttpService:JSONDecode(readfile(ConfigModule.Path))
+        end)
+        
+        if success and configData and configData.__autoload then
+            ConfigModule.AutoLoad = true
+            
+            task.spawn(function()
+                task.wait(0.5)
+                local success, result = pcall(function()
+                    return ConfigModule:Load()
+                end)
+                if success then
+                    if Window.Debug then print("[ WindUI.ConfigManager ] AutoLoaded config: " .. configFilename) end
+                else
+                    warn("[ WindUI.ConfigManager ] Failed to AutoLoad config: " .. configFilename .. " - " .. tostring(result))
+                end
+            end)
+        end
+    end
+    
+    
+    ConfigModule:SetAsCurrent()
     ConfigManager.Configs[configFilename] = ConfigModule
     return ConfigModule
 end
@@ -526,9 +463,10 @@ function ConfigManager:AllConfigs()
     
     local files = {}
     if not isfolder(ConfigManager.Path) then
+        makefolder(ConfigManager.Path)
         return files
     end
-
+    
     for _, file in next, listfiles(ConfigManager.Path) do
         local name = file:match("([^\\/]+)%.json$")
         if name then
@@ -541,10 +479,6 @@ end
 
 function ConfigManager:GetConfig(configName)
     return ConfigManager.Configs[configName]
-end
-
-function ConfigManager:SetWindow(WindowTable)
-    ConfigManager.Window = WindowTable
 end
 
 return ConfigManager

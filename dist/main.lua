@@ -4063,7 +4063,27 @@ ae:Set(af.value==true)
 task.spawn(function()
 task.wait(0.05)
 if ae.Callback then
-ae.Callback(value)
+ae.Callback(af.value)
+end
+end)
+end
+end
+},
+Section={
+Save=function(ae)
+return{
+__type=ae.__type,
+opened=ae.Opened==true,
+}
+end,
+Load=function(ae,af)
+if ae then
+task.spawn(function()
+task.wait(0.1)
+if af.opened and ae.Open then
+ae:Open()
+elseif not af.opened and ae.Close then
+ae:Close()
 end
 end)
 end
@@ -4073,20 +4093,20 @@ end
 }
 
 function ad.Init(ae,af)
-if not af.Folder and not af.Settings then
-warn"[ ConfigManager ] Window.Folder is not specified."
+if not af.Folder then
+warn"[ WindUI.ConfigManager ] Window.Folder is not specified."
 return false
 end
 
-ad.Folder=af.Folder or(af.Settings and af.Settings.Folder)
+ac=af
+ad.Folder=ac.Folder
 ad.Path="Avantrix/"..tostring(ad.Folder).."/config/"
-ad.Window=af
 
 if not isfolder("Avantrix/"..ad.Folder)then
 makefolder("Avantrix/"..ad.Folder)
-if not isfolder("Avantrix/"..ad.Folder.."/config/")then
-makefolder("Avantrix/"..ad.Folder.."/config/")
 end
+if not isfolder(ad.Path)then
+makefolder(ad.Path)
 end
 
 local ag=ad:AllConfigs()
@@ -4098,7 +4118,6 @@ ad.Configs[ai]=readfile(aj)
 end
 end
 
-print"[ ConfigManager ] Initialized successfully"
 return ad
 end
 
@@ -4116,6 +4135,10 @@ if not af then
 return false,"No config file is selected"
 end
 
+function ah.SetAsCurrent(ai)
+ac:SetCurrentConfig(ah)
+end
+
 function ah.AutoRegisterElements(ai)
 if not ac then
 warn"[ WindUI.ConfigManager ] Window is not set"
@@ -4123,144 +4146,21 @@ return 0
 end
 
 ah.Elements={}
-local aj={}
-local ak={}
-
-print"[ ConfigManager ] Starting auto-register scan..."
+local aj=0
 
 
-if ad.Window.AllElements and type(ad.Window.AllElements)=="table"then
-for al,am in pairs(ad.Window.AllElements)do
-if type(am)=="table"and not ak[am]then
-ak[am]=true
-table.insert(aj,am)
-end
-end
-print("[ ConfigManager ] Found "..#aj.." from Window.AllElements")
-end
-
-
-if ad.Window.Elements and type(ad.Window.Elements)=="table"then
-for al,am in pairs(ad.Window.Elements)do
-if type(am)=="table"and not ak[am]then
-ak[am]=true
-table.insert(aj,am)
-end
-end
-print("[ ConfigManager ] Found "..#aj.." total after Window.Elements")
-end
-
-
-local al=ad.Window.Tabs or ad.Window.tabs
-if al and type(al)=="table"then
-print"[ ConfigManager ] Scanning tabs..."
-for am,an in pairs(al)do
-if type(an)=="table"then
-
-if an.Elements and type(an.Elements)=="table"then
-for ao,ap in pairs(an.Elements)do
-if type(ap)=="table"and not ak[ap]then
-ak[ap]=true
-table.insert(aj,ap)
-end
-end
-end
-
-
-if an.AllElements and type(an.AllElements)=="table"then
-for ao,ap in pairs(an.AllElements)do
-if type(ap)=="table"and not ak[ap]then
-ak[ap]=true
-table.insert(aj,ap)
-end
-end
-end
-
-
-if an.Sections and type(an.Sections)=="table"then
-for ao,ap in pairs(an.Sections)do
-if type(ap)=="table"and ap.Elements then
-for aq,ar in pairs(ap.Elements)do
-if type(ar)=="table"and not ak[ar]then
-ak[ar]=true
-table.insert(aj,ar)
+if ac.AllElements then
+for ak,al in ipairs(ac.AllElements)do
+if al and al.__type and ad.Parser[al.__type]then
+if al.Title and not ad.ExcludedTitles[al.Title]then
+local am=al.Title or("Element_"..ak)
+ah.Elements[am]=al
+aj=aj+1
 end
 end
 end
 end
-end
-end
-end
-print("[ ConfigManager ] Found "..#aj.." total after scanning tabs")
-end
-
-
-if#aj==0 then
-print"[ ConfigManager ] Performing deep scan..."
-local function scanForElements(am,an,ao)
-if an>5 or type(am)~="table"or ao[am]then return end
-ao[am]=true
-
-if am.__type and type(am.__type)=="string"and not ak[am]then
-ak[am]=true
-table.insert(aj,am)
-end
-
-for ap,aq in pairs(am)do
-if type(aq)=="table"and ap~="Parent"and ap~="Window"and ap~="_G"then
-scanForElements(aq,an+1,ao)
-end
-end
-end
-
-scanForElements(ad.Window,0,{})
-print("[ ConfigManager ] Deep scan found "..#aj.." elements")
-end
-
-
-local am=0
-local an={
-Toggle=true,
-Slider=true,
-Dropdown=true,
-Input=true,
-Keybind=true,
-Colorpicker=true
-}
-
-for ao,ap in ipairs(aj)do
-if ap and ap.__type then
-local aq=tostring(ap.__type)
-
-
-if not an[aq]then
-continue
-end
-
-
-if ap.Title and ad.ExcludedTitles[ap.Title]then
-continue
-end
-
-
-local ar=ap.Title or ap.Flag or("Element_"..ao)
-ar=tostring(ar):gsub("[^%w_%-% ]","_")
-
-
-local as=ar
-local at=1
-while ah.Elements[ar]do
-ar=as.."_"..at
-at=at+1
-end
-
-ah.Elements[ar]=ap
-am=am+1
-end
-end
-
-print("[ ConfigManager ] Successfully registered "..am.." elements")
-return am
+return aj
 end
 
 function ah.Register(ai,aj,ak)
@@ -4275,13 +4175,13 @@ function ah.Get(ai,aj)
 return ah.CustomData[aj]
 end
 
+function ah.SetAutoLoad(ai,aj)
+ah.AutoLoad=aj
+end
+
 function ah.Save(ai)
 if ah.AutoRegisterEnabled then
-local aj=ah:AutoRegisterElements()
-if aj==0 then
-warn"[ ConfigManager ] No elements found to save!"
-return false
-end
+ah:AutoRegisterElements()
 end
 
 local aj={
@@ -4300,7 +4200,7 @@ end)
 if am then
 aj.__elements[tostring(ak)]=an
 else
-warn("[ ConfigManager ] Failed to save "..ak..": "..tostring(an))
+warn("[ WindUI.ConfigManager ] Failed to save "..ak)
 end
 end
 end
@@ -4309,27 +4209,12 @@ local ak,al=pcall(function()
 return ab:JSONEncode(aj)
 end)
 
-if not ak then
-warn("[ ConfigManager ] Failed to encode JSON: "..tostring(al))
-return false
-end
-
-if writefile then
-local am,an=pcall(function()
+if ak and writefile then
 writefile(ah.Path,al)
-end)
+return aj
+end
 
-if am then
-print"[ ConfigManager ] Config saved successfully!"
-return true
-else
-warn("[ ConfigManager ] Failed to write file: "..tostring(an))
 return false
-end
-else
-warn"[ ConfigManager ] writefile is not available"
-return false
-end
 end
 
 function ah.Load(ai)
@@ -4338,13 +4223,14 @@ return false,"Config file does not exist"
 end
 
 local aj,ak=pcall(function()
-local aj=readfile or function()warn"[ ConfigManager ] readfile not available"return nil end
-local ak=aj(ah.Path)
-return ab:JSONDecode(ak)
+local aj=readfile or function()
+warn"[ WindUI.ConfigManager ] The config system doesn't work in the studio."
+return nil
+end
+return ab:JSONDecode(aj(ah.Path))
 end)
 
 if not aj then
-warn("[ ConfigManager ] Failed to parse config file: "..tostring(ak))
 return false,"Failed to parse config file"
 end
 
@@ -4361,9 +4247,8 @@ if ah.AutoRegisterEnabled then
 ah:AutoRegisterElements()
 end
 
-
-for al,am in next,(ak.__elements or{})do
-if ah.Elements[al]and am.__type and ad.Parser[am.__type]then
+for al,am in pairs(ak.__elements or{})do
+if ah.Elements[al]and ad.Parser[am.__type]then
 pcall(function()
 ad.Parser[am.__type].Load(ah.Elements[al],am)
 end)
@@ -4375,13 +4260,65 @@ ah.CustomData=ak.__custom or{}
 return ah.CustomData
 end
 
+function ah.Delete(ai)
+if not delfile then
+return false,"delfile function is not available"
+end
+
+if not isfile(ah.Path)then
+return false,"Config file does not exist"
+end
+
+local aj,ak=pcall(function()
+delfile(ah.Path)
+end)
+
+if not aj then
+return false,"Failed to delete config file: "..tostring(ak)
+end
+
+ad.Configs[af]=nil
+
+if ac.CurrentConfig==ah then
+ac.CurrentConfig=nil
+end
+
+return true,"Config deleted successfully"
+end
+
 function ah.GetData(ai)
 return{
 elements=ah.Elements,
-custom=ah.CustomData
+custom=ah.CustomData,
+autoload=ah.AutoLoad
 }
 end
 
+
+if isfile(ah.Path)then
+local ai,aj=pcall(function()
+return ab:JSONDecode(readfile(ah.Path))
+end)
+
+if ai and aj and aj.__autoload then
+ah.AutoLoad=true
+
+task.spawn(function()
+task.wait(0.5)
+local ak,al=pcall(function()
+return ah:Load()
+end)
+if ak then
+if ac.Debug then print("[ WindUI.ConfigManager ] AutoLoaded config: "..af)end
+else
+warn("[ WindUI.ConfigManager ] Failed to AutoLoad config: "..af.." - "..tostring(al))
+end
+end)
+end
+end
+
+
+ah:SetAsCurrent()
 ad.Configs[af]=ah
 return ah
 end
@@ -4435,6 +4372,7 @@ if not listfiles then return{}end
 
 local af={}
 if not isfolder(ad.Path)then
+makefolder(ad.Path)
 return af
 end
 
@@ -4452,12 +4390,7 @@ function ad.GetConfig(ae,af)
 return ad.Configs[af]
 end
 
-function ad.SetWindow(ae,af)
-ad.Window=af
-end
-
 return ad end function a.x():typeof(__modImpl())local aa=a.cache.x if not aa then aa={c=__modImpl()}a.cache.x=aa end return aa.c end end do local function __modImpl()
-
 local aa={}
 
 local ab=a.b()
@@ -12894,8 +12827,8 @@ aa:SetLanguage(ao.Language)
 function aa.CreateWindow(aw,ax)
 local ay=a.Z()
 
-if not isfolder"WindUI"then
-makefolder"WindUI"
+if not isfolder"Avantrix"then
+makefolder"Avantrix"
 end
 if ax.Folder then
 makefolder(ax.Folder)
